@@ -73,10 +73,20 @@ func (kv *KVStore) reserveNextFileID() uint64 {
 
 func (kv *KVStore) installFlushedTable(meta *SSTableMeta) {
 	kv.mu.Lock()
-	defer kv.mu.Unlock()
 
 	kv.sstables = append(kv.sstables, meta)
 	kv.immTable = nil
+	kv.mu.Unlock()
+
+	// ================== 添加点 ==================
+	// 💡 架构闭环: 数据已经安全固化到 SSTable，此时哪怕断电也不会丢。
+	// 必须立刻清空或截断旧的 WAL 日志，防止 WAL 无限膨胀和重启时重复回放。
+	if kv.wal != nil {
+		// 注：这里假设你的 wal 模块有 Clear 或 Rotate 方法。
+		// 如果还没有，可以在 wal 包里加一个清空底层文件并重置 buffer 的方法。
+		// kv.wal.Clear()
+	}
+	// ============================================
 }
 
 // ================= 后台引擎：Recovery =================
@@ -179,9 +189,17 @@ func (kv *KVStore) loadSSTables() error {
 			continue
 		}
 
+		minKey := make([]byte, 0)
+		file.Seek(0, io.SeekStart)
+		minKeyBuf := make([]byte, 4)
+		if _, err := io.ReadFull(file, minKeyBuf); err == nil {
+			keyLen := binary.LittleEndian.Uint32(minKeyBuf)
+			minKey = make([]byte, keyLen)
+			io.ReadFull(file, minKey)
+		}
 		meta := &SSTableMeta{
 			FileID: fileID,
-			MinKey: index[0].MaxKey,
+			MinKey: minKey,
 			MaxKey: index[len(index)-1].MaxKey,
 			Size:   uint64(fileSize),
 			Index:  index,

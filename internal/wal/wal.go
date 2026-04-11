@@ -1,7 +1,6 @@
 package wal
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -43,28 +42,60 @@ func OpenWAL(filePath string) (*WAL, error) {
 func (w *WAL) AppendPut(key, val string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	write := bufio.NewWriter(w.file)
-	binary.Write(write, binary.BigEndian, OpPut)
-	binary.Write(write, binary.BigEndian, uint32(len(key)))
-	write.WriteString(key)
-	binary.Write(write, binary.BigEndian, uint32(len(val)))
-	write.WriteString(val)
-	write.Flush()
-	w.file.Sync()
 
-	return nil
+	// 💡 Trade-off (架构权衡 - 序列化性能):
+	// 摒弃低效的 binary.Write(反射) 和频繁分配的 bufio.NewWriter。
+	// 采用预分配连续内存 + binary.PutUint32 手动打包二进制，极致压榨 CPU 性能。
+
+	kLen := len(key)
+	vLen := len(val)
+	// 总长度 = Type(1) + KeyLen(4) + Key + ValLen(4) + Value
+	buf := make([]byte, 1+4+kLen+4+vLen)
+
+	buf[0] = OpPut
+	binary.BigEndian.PutUint32(buf[1:5], uint32(kLen))
+	copy(buf[5:5+kLen], key)
+
+	offset := 5 + kLen
+	binary.BigEndian.PutUint32(buf[offset:offset+4], uint32(vLen))
+	copy(buf[offset+4:], val)
+
+	if _, err := w.file.Write(buf); err != nil {
+		return err
+	}
+	return w.file.Sync()
+	//return nil
+
+	/*
+		write := bufio.NewWriter(w.file)
+		binary.Write(write, binary.BigEndian, OpPut)
+		binary.Write(write, binary.BigEndian, uint32(len(key)))
+		write.WriteString(key)
+		binary.Write(write, binary.BigEndian, uint32(len(val)))
+		write.WriteString(val)
+		write.Flush()
+		w.file.Sync()
+
+		return nil
+	*/
 }
 
 func (w *WAL) AppendDelete(key string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	write := bufio.NewWriter(w.file)
-	binary.Write(write, binary.BigEndian, OpDelete)
-	binary.Write(write, binary.BigEndian, uint32(len(key)))
-	write.WriteString(key)
-	write.Flush()
-	w.file.Sync()
-	return nil
+	kLen := len(key)
+	// 总长度 = Type(1) + KeyLen(4) + Key
+	buf := make([]byte, 1+4+kLen)
+
+	buf[0] = OpDelete
+	binary.BigEndian.PutUint32(buf[1:5], uint32(kLen))
+	copy(buf[5:], key)
+
+	if _, err := w.file.Write(buf); err != nil {
+		return err
+	}
+	return w.file.Sync()
+	//return nil
 }
 
 // Close 关闭 WAL 文件
@@ -119,4 +150,21 @@ func (w *WAL) Replay(onPut func(key, val string), onDelete func(key string)) err
 	// 3. 恢复完成后，把文件指针重新移回末尾，准备接受后续的 Append
 	_, err = w.file.Seek(0, io.SeekEnd)
 	return err
+}
+
+// Clear 清空 WAL 文件内容（当数据成功 Flush 到 SSTable 后调用）
+func (w *WAL) Clear() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// 1. 将文件物理截断为 0 字节
+	if err := w.file.Truncate(0); err != nil {
+		return err
+	}
+	// 2. 将文件指针强行拨回开头
+	if _, err := w.file.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	// 3. 强制落盘，确保磁盘上的旧数据被彻底抹除
+	return w.file.Sync()
 }
