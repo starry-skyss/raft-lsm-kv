@@ -23,7 +23,7 @@ func main() {
 	}
 	walPath := filepath.Join(dataDir, "wal")
 	if err := os.MkdirAll(walPath, 0755); err != nil {
-		fmt.Printf("ERROR: Failed to create wal directory: %v\n", err)
+		log.Fatalf("ERROR: Failed to create wal directory: %v\n", err)
 		return
 	}
 	walPath = filepath.Join(walPath, "wal.log")

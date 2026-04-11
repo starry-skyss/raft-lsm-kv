@@ -68,11 +68,24 @@ func (m *MemTable) Get(key []byte) ([]byte, bool) {
 
 // ================= 2. KVStore (LSM 引擎入口) =================
 
+type BlockHandle struct {
+	Offset uint64 // 数据块在文件中的偏移位置
+	Size   uint64 // 数据块的大小
+}
+
+type Footer struct {
+	IndexHandle BlockHandle // 指向 MetaIndex Block 的位置和大小
+	MagicNumber uint64      // 文件格式标识，方便未来版本升级
+}
+
+const FooterSize = 24 // IndexHandle 的 16 字节 + MagicNumber 的 8 字节
+
 type SSTableMeta struct {
 	FileID uint64 // 比如 1 代表 000001.sst
 	MinKey []byte // 该文件的最小 Key
 	MaxKey []byte // 该文件的最大 Key
-	Size   int64  // 文件大小
+	Size   uint64 // 文件大小
+	Index  []IndexEntry
 	// Level  int // 等 Week 4 做 Compaction 时，我们再给它分层
 }
 
@@ -172,8 +185,7 @@ func (kv *KVStore) Get(key string) (string, bool) {
 		}
 
 		// 拼出文件名去磁盘里线性扫描
-		filename := filepath.Join(kv.sstDir, fmt.Sprintf("%06d.sst", meta.FileID))
-		val, found := readValFromSSTableFile(filename, kBytes)
+		val, found := readValFromSSTable(meta, kv.sstDir, kBytes)
 
 		if found {
 			if val == nil { // 碰到墓碑了
@@ -187,58 +199,77 @@ func (kv *KVStore) Get(key string) (string, bool) {
 	return "", false
 }
 
-func readValFromSSTableFile(filename string, targetKey []byte) ([]byte, bool) {
+// 传入 meta，利用它内存中的 Index 进行二分查找
+func readValFromSSTable(meta *SSTableMeta, dir string, targetKey []byte) ([]byte, bool) {
+	// 1. 在内存中的 Index 数组里进行二分查找
+	idx := sort.Search(len(meta.Index), func(i int) bool {
+		return bytes.Compare(meta.Index[i].MaxKey, targetKey) >= 0
+	})
+
+	// 如果所有的 MaxKey 都比 targetKey 小，说明不在这个文件里
+	if idx == len(meta.Index) {
+		return nil, false
+	}
+
+	handle := meta.Index[idx].Handle
+
+	// 2. 精准打开文件，Seek 到对应的数据块
+	filename := filepath.Join(dir, fmt.Sprintf("%06d.sst", meta.FileID))
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, false
 	}
 	defer file.Close()
 
+	// 3. 把这 4KB (或更大) 的 Data Block 一次性读进内存
+	blockData := make([]byte, handle.Size)
+	if _, err := file.ReadAt(blockData, int64(handle.Offset)); err != nil {
+		return nil, false
+	}
+
+	// 4. 在这 4KB 的内存 buffer 里，寻找真实的 KV（就像你之前的线性扫描，不过是在内存里扫 4KB）
+	// 你可以使用 bytes.Reader 来解析这块内存：
+	reader := bytes.NewReader(blockData)
 	lenBuf := make([]byte, 4)
 
-	for {
-		// 1. 读 Key 的长度
-		if _, err := io.ReadFull(file, lenBuf); err != nil {
-			if err == io.EOF {
-				break // 读到文件末尾了，说明没找到
-			}
-			return nil, false
+	for reader.Len() > 0 {
+		// ... (读 KeyLen, 读 Key, 读 ValLen, 读 Val)
+		// ... 如果 bytes.Equal(keyBuf, targetKey) 则返回
+		// 读 KeyLen
+		if _, err := io.ReadFull(reader, lenBuf); err != nil {
+			break
 		}
 		keyLen := binary.LittleEndian.Uint32(lenBuf)
 
-		// 2. 读 Key 的内容
+		// 读 Key
 		keyBuf := make([]byte, keyLen)
-		if _, err := io.ReadFull(file, keyBuf); err != nil {
-			return nil, false
+		if _, err := io.ReadFull(reader, keyBuf); err != nil {
+			break
 		}
 
-		// 3. 读 Value 的长度
-		if _, err := io.ReadFull(file, lenBuf); err != nil {
-			return nil, false
+		// 读 ValLen
+		if _, err := io.ReadFull(reader, lenBuf); err != nil {
+			break
 		}
 		valLen := binary.LittleEndian.Uint32(lenBuf)
 
 		var valBuf []byte
-		isTombstone := valLen == 0xFFFFFFFF
-
-		// 4. 读 Value 的内容 (如果不是墓碑)
-		if !isTombstone {
+		if valLen == 0xFFFFFFFF { // 墓碑标记
+			valBuf = nil
+		} else {
 			valBuf = make([]byte, valLen)
-			if _, err := io.ReadFull(file, valBuf); err != nil {
-				return nil, false
+			if _, err := io.ReadFull(reader, valBuf); err != nil {
+				break
 			}
 		}
 
-		// 5. 判断是不是我们要找的 Key
 		if bytes.Equal(keyBuf, targetKey) {
-			if isTombstone {
-				return nil, true // 找到了，但是个墓碑
-			}
-			return valBuf, true // 找到了，返回真实值
+			return valBuf, true // 找到了，返回 Value 和 true
 		}
+
 	}
 
-	return nil, false // 整个文件扫完了都没找到
+	return nil, false // 数据块里没找到
 }
 
 func (kv *KVStore) Delete(key string) error {
@@ -293,7 +324,7 @@ func (kv *KVStore) flush(imm *MemTable) {
 
 	// ============ 阶段 2：执行沉重的写盘操作 ============
 	// 此时没有持有任何锁！前台可以继续疯狂 Put 到新的 memTable
-	size, err := writeSSTable(filename, imm)
+	size, index, err := writeSSTable(filename, imm)
 	if err != nil {
 		fmt.Printf("ERROR: Failed to flush sstable %s: %v\n", filename, err)
 		// 实际工程中这里需要报警、重试或者 Panic 宕机
@@ -310,6 +341,7 @@ func (kv *KVStore) flush(imm *MemTable) {
 		MinKey: minKey, // 有序切片的第一个元素
 		MaxKey: maxKey, // 有序切片的最后一个元素
 		Size:   size,
+		Index:  index,
 	}
 
 	// ============ 阶段 4：注册新文件，清理旧状态 ============
@@ -333,48 +365,215 @@ func (kv *KVStore) flush(imm *MemTable) {
 
 }
 
+type IndexEntry struct {
+	MaxKey []byte
+	Handle BlockHandle
+}
+
 // 写盘核心逻辑
-func writeSSTable(filename string, imm *MemTable) (int64, error) {
+func writeSSTable(filename string, imm *MemTable) (uint64, []IndexEntry, error) {
 	file, err := os.Create(filename)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	defer file.Close()
 
-	var writtenBytes int64 = 0 //计数器
+	var writtenBytes uint64 = 0 //计数器
+	var dataBuf bytes.Buffer
+	var index []IndexEntry
+	var currentOffset uint64 = 0
 
-	// 用一个 4 字节的 buffer 复用，避免频繁内存分配
-	lenBuf := make([]byte, 4)
+	// 用一个 8 字节的 buffer 复用，避免频繁内存分配
+	lenBuf := make([]byte, 8)
 
-	for _, pair := range imm.pairs {
+	for i, pair := range imm.pairs {
 		// 1. 写入 Key 的长度 (uint32)
-		binary.LittleEndian.PutUint32(lenBuf, uint32(len(pair.Key)))
-		n, _ := file.Write(lenBuf)
-		writtenBytes += int64(n)
+		binary.LittleEndian.PutUint32(lenBuf[0:4], uint32(len(pair.Key)))
+		dataBuf.Write(lenBuf[0:4])
 
 		// 2. 写入 Key 内容
-		n, _ = file.Write(pair.Key)
-		writtenBytes += int64(n)
+		dataBuf.Write(pair.Key)
 
 		// 3. 处理 Value 长度和内容
 		if pair.Value == nil {
 			// 墓碑标记：用最大值或特定值表示，这里我们如果转成 int32，就是 -1
-			binary.LittleEndian.PutUint32(lenBuf, 0xFFFFFFFF)
-			n, _ = file.Write(lenBuf)
-			writtenBytes += int64(n)
+			binary.LittleEndian.PutUint32(lenBuf[0:4], 0xFFFFFFFF)
+			dataBuf.Write(lenBuf[0:4])
 		} else {
 			// 正常写入 Value 长度 (uint32)
-			binary.LittleEndian.PutUint32(lenBuf, uint32(len(pair.Value)))
-			n, _ = file.Write(lenBuf)
-			writtenBytes += int64(n)
+			binary.LittleEndian.PutUint32(lenBuf[0:4], uint32(len(pair.Value)))
+			dataBuf.Write(lenBuf[0:4])
 
 			// 4. 写入 Value 内容
-			n, _ = file.Write(pair.Value)
-			writtenBytes += int64(n)
+			dataBuf.Write(pair.Value)
+		}
+
+		if dataBuf.Len() >= 4096 || i == len(imm.pairs)-1 {
+			// 写满了或者是最后一个了，先把数据块写到文件里
+			_, err := file.Write(dataBuf.Bytes())
+			if err != nil {
+				return writtenBytes, index, err
+			}
+			writtenBytes += uint64(dataBuf.Len())
+
+			// 记录索引信息：Key 和对应的数据块位置
+			index = append(index, IndexEntry{
+				MaxKey: pair.Key,
+				Handle: BlockHandle{Offset: uint64(currentOffset), Size: uint64(dataBuf.Len())},
+			})
+
+			currentOffset += uint64(dataBuf.Len())
+			dataBuf.Reset() // 清空 buffer，准备写下一批数据
 		}
 	}
-	if err := file.Sync(); err != nil {
-		return writtenBytes, err
+	// 3. 构建并写入 Index Block
+	// 把上面的 index 数组也序列化，写进 file
+	var indexBuf bytes.Buffer
+	for _, entry := range index {
+		// 写 MaxKey 长度
+		binary.LittleEndian.PutUint32(lenBuf[0:4], uint32(len(entry.MaxKey)))
+		indexBuf.Write(lenBuf[0:4])
+
+		// 写 MaxKey 内容
+		indexBuf.Write(entry.MaxKey)
+
+		// 写 BlockHandle (Offset 和 Size)
+		binary.LittleEndian.PutUint64(lenBuf[0:8], entry.Handle.Offset)
+		indexBuf.Write(lenBuf)
+		binary.LittleEndian.PutUint64(lenBuf[0:8], entry.Handle.Size)
+		indexBuf.Write(lenBuf)
 	}
-	return writtenBytes, nil
+
+	indexOffset := currentOffset
+	indexSize := uint64(indexBuf.Len())
+	if _, err := file.Write(indexBuf.Bytes()); err != nil {
+		return writtenBytes, index, err
+	}
+	writtenBytes += indexSize
+
+	// 4. 构建并写入 Footer
+	var footerBuf bytes.Buffer
+
+	// 写 Index Block 的 BlockHandle
+	binary.LittleEndian.PutUint64(lenBuf[0:8], indexOffset)
+	footerBuf.Write(lenBuf)
+	binary.LittleEndian.PutUint64(lenBuf[0:8], indexSize)
+	footerBuf.Write(lenBuf)
+
+	// 写 Magic Number (比如 0x12345678ABCDEF00，未来版本升级可以改这个值来区分格式)
+	magicNumber := uint64(0x12345678ABCDEF00)
+	binary.LittleEndian.PutUint64(lenBuf[0:8], magicNumber)
+	footerBuf.Write(lenBuf)
+
+	if _, err := file.Write(footerBuf.Bytes()); err != nil {
+		return writtenBytes, index, err
+	}
+	writtenBytes += uint64(footerBuf.Len())
+
+	if err := file.Sync(); err != nil {
+		return writtenBytes, index, err
+	}
+	return writtenBytes, index, nil
+}
+
+func (kv *KVStore) loadSSTables() error {
+	// 1. 读取 sstDir 目录下所有的文件
+	files, err := os.ReadDir(kv.sstDir)
+	if err != nil {
+		return err
+	}
+
+	var loadedMetas []*SSTableMeta
+
+	for _, f := range files {
+		if filepath.Ext(f.Name()) != ".sst" {
+			continue
+		}
+
+		// 解析文件名，获取 FileID (例如 "000001.sst" -> 1)
+		var fileID uint64
+		fmt.Sscanf(f.Name(), "%06d.sst", &fileID)
+
+		filePath := filepath.Join(kv.sstDir, f.Name())
+		file, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+
+		stat, _ := file.Stat()
+		fileSize := stat.Size()
+
+		// 2. 读 Footer (最后 24 字节)
+		if fileSize < 24 {
+			file.Close()
+			continue // 文件损坏或过小
+		}
+		footerBuf := make([]byte, 24)
+		file.ReadAt(footerBuf, fileSize-24)
+
+		magic := binary.LittleEndian.Uint64(footerBuf[16:24])
+		if magic != 0x12345678ABCDEF00 {
+			file.Close()
+			panic(fmt.Sprintf("SSTable %s is corrupted: bad magic number", f.Name()))
+		}
+
+		indexOffset := binary.LittleEndian.Uint64(footerBuf[0:8])
+		indexSize := binary.LittleEndian.Uint64(footerBuf[8:16])
+
+		// 3. 读 Index Block
+		indexBuf := make([]byte, indexSize)
+		file.ReadAt(indexBuf, int64(indexOffset))
+
+		// 4. 反序列化 Index Block 恢复到内存
+		var index []IndexEntry
+		reader := bytes.NewReader(indexBuf)
+		lenBuf := make([]byte, 8) // 用来读 4字节或8字节
+
+		for reader.Len() > 0 {
+			io.ReadFull(reader, lenBuf[:4])
+			keyLen := binary.LittleEndian.Uint32(lenBuf[:4])
+
+			key := make([]byte, keyLen)
+			io.ReadFull(reader, key)
+
+			io.ReadFull(reader, lenBuf) // 读 8 字节 offset
+			offset := binary.LittleEndian.Uint64(lenBuf)
+
+			io.ReadFull(reader, lenBuf) // 读 8 字节 size
+			size := binary.LittleEndian.Uint64(lenBuf)
+
+			index = append(index, IndexEntry{
+				MaxKey: key,
+				Handle: BlockHandle{Offset: offset, Size: size},
+			})
+		}
+		file.Close()
+
+		if len(index) == 0 {
+			continue
+		}
+
+		// 5. 组装 Meta
+		meta := &SSTableMeta{
+			FileID: fileID,
+			MinKey: index[0].MaxKey, // 注：严格来说应该是该文件首个KV的Key，为了简化，MVP阶段用第一个Block的MaxKey代替也可
+			MaxKey: index[len(index)-1].MaxKey,
+			Size:   uint64(fileSize),
+			Index:  index,
+		}
+		loadedMetas = append(loadedMetas, meta)
+
+		// 更新 nextFileID 以防覆盖老文件
+		if fileID >= kv.nextFileID {
+			kv.nextFileID = fileID + 1
+		}
+	}
+
+	// 6. 按照 FileID 从小到大排序 (FileID 越大，数据越新)
+	sort.Slice(loadedMetas, func(i, j int) bool {
+		return loadedMetas[i].FileID < loadedMetas[j].FileID
+	})
+
+	kv.sstables = loadedMetas
+	return nil
 }
