@@ -37,7 +37,11 @@ func readValFromSSTable(meta *SSTableMeta, dir string, targetKey []byte) ([]byte
 	defer file.Close()
 
 	// 3. 把 Data Block 一次性读进内存
-	//亮点：这里使用 ReadAt 而不是 Seek+Read，保证了底层并发读的线程安全性！
+	// !!! 亮点：这里使用 ReadAt 而不是 Seek+Read，保证了底层并发读的线程安全性!!!!
+	// 💡 Trade-off (架构权衡 - 读盘方式)	:
+	// 目前我们直接使用 ReadAt 进行随机访问，简单且线程安全，但每次都要进行一次系统调用。
+	// 优化方向：如果访问模式显示出局部性（比如热点数据），可以考虑将整个 SSTable 文件映射到内存 (mmap)，
+	// 这样就可以在用户态直接访问数据，极大降低访问延迟。
 	blockData := make([]byte, handle.Size)
 	if _, err := file.ReadAt(blockData, int64(handle.Offset)); err != nil {
 		return nil, false
@@ -76,6 +80,7 @@ func readValFromSSTable(meta *SSTableMeta, dir string, targetKey []byte) ([]byte
 			}
 		}
 
+		// 找到了目标 Key，直接返回（墓碑返回 nil，外部会判断）
 		if bytes.Equal(keyBuf, targetKey) {
 			return valBuf, true
 		}

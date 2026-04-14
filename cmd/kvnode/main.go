@@ -9,43 +9,21 @@ import (
 	"strings"
 
 	"raft-lsm-kv/internal/lsm"
-	"raft-lsm-kv/internal/wal"
 )
 
 func main() {
 	fmt.Println("=== start ===")
 
-	// 1. 设置数据目录和 WAL 文件路径
-	dataDir := "data"
-	// 确保目录存在，权限设置为 0755
+	// 1. 统一使用项目根目录下的 data/ 目录。
+	rootDir := "."
+	dataDir := filepath.Join(rootDir, "data")
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		log.Fatalf("无法创建数据目录: %v", err)
 	}
-	walPath := filepath.Join(dataDir, "wal")
-	if err := os.MkdirAll(walPath, 0755); err != nil {
-		log.Fatalf("ERROR: Failed to create wal directory: %v\n", err)
-		return
-	}
-	walPath = filepath.Join(walPath, "wal.log")
 
-	// 2. 打开或创建 WAL 文件
-	w, err := wal.OpenWAL(walPath)
-	if err != nil {
-		log.Fatalf("无法打开 WAL 文件: %v", err)
-	}
-	// 确保程序正常退出时释放文件句柄
-	defer w.Close()
+	kv := lsm.NewKVStore(rootDir)
 
-	// 3. 初始化内存表 KVStore 并注入 WAL (依赖注入)
-	kv := lsm.NewKVStore(w, dataDir)
-
-	// 4. 重放 WAL，执行崩溃恢复
-	fmt.Printf("[系统] 正在从 %s 恢复数据...\n", walPath)
-	if err := kv.RecoverFromWAL(); err != nil {
-		log.Fatalf("数据恢复失败: %v", err)
-	}
-
-	// 通过公开的 Len() 方法安全地获取数据量
+	// 4. 通过公开的 Len() 方法安全地获取数据量
 	count := kv.Len()
 	fmt.Printf("[系统] 数据恢复完成！当前包含 %d 条数据。\n", count)
 

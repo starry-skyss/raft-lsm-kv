@@ -108,6 +108,30 @@ func (w *WAL) Close() error {
 	return nil
 }
 
+// Delete 关闭并删除 WAL 文件（用于旧日志完成 flush 后的回收）
+func (w *WAL) Delete() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.file == nil {
+		return nil
+	}
+
+	name := w.file.Name()
+	if err := w.file.Sync(); err != nil {
+		return err
+	}
+	if err := w.file.Close(); err != nil {
+		return err
+	}
+	w.file = nil
+
+	if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
 func (w *WAL) Replay(onPut func(key, val string), onDelete func(key string)) error {
 	// 1. 将文件指针移动到文件头部
 	_, err := w.file.Seek(0, io.SeekStart)
@@ -130,13 +154,23 @@ func (w *WAL) Replay(onPut func(key, val string), onDelete func(key string)) err
 			break
 		}
 
-		binary.Read(w.file, binary.BigEndian, &klen)
+		if err := binary.Read(w.file, binary.BigEndian, &klen); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
 		keyBuf := make([]byte, klen)
 		if _, err := io.ReadFull(w.file, keyBuf); err != nil {
 			return err // 处理读取失败
 		}
 		if op == OpPut {
-			binary.Read(w.file, binary.BigEndian, &vlen)
+			if err := binary.Read(w.file, binary.BigEndian, &vlen); err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
 			valBuf := make([]byte, vlen)
 			if _, err := io.ReadFull(w.file, valBuf); err != nil {
 				return err
@@ -144,6 +178,8 @@ func (w *WAL) Replay(onPut func(key, val string), onDelete func(key string)) err
 			onPut(string(keyBuf), string(valBuf))
 		} else if op == OpDelete {
 			onDelete(string(keyBuf))
+		} else {
+			return fmt.Errorf("unknown wal op: %d", op)
 		}
 	}
 
