@@ -1,90 +1,69 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"raft-lsm-kv/internal/lsm"
+	"os"
+	"time"
+
+	//"raft-lsm-kv/internal/lsm"
+	"raft-lsm-kv/internal/api"
+	"raft-lsm-kv/internal/raft"
+	"raft-lsm-kv/internal/raft/labgob"
+	"raft-lsm-kv/internal/raft/labrpc"
+	"raft-lsm-kv/internal/raft/raftapi"
+	"raft-lsm-kv/internal/store"
 )
 
 func main() {
-	fmt.Println("=== start ===")
+	labgob.Register(store.Op{})
+	net := labrpc.MakeNetwork()
+	defer net.Cleanup()
 
-	// 1. 统一使用项目根目录下的 data/ 目录。
-	rootDir := "."
-	dataDir := filepath.Join(rootDir, "data")
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		log.Fatalf("无法创建数据目录: %v", err)
+	serverCount := 3
+	kvStores := make([]*store.KVStore, serverCount)
+	// 1. 提前创建好 3 个空的 RPC Server，并挂载到网络上
+	servers := make([]*labrpc.Server, serverCount)
+	for i := 0; i < serverCount; i++ {
+		serverName := fmt.Sprintf("server-%d", i)
+		servers[i] = labrpc.MakeServer()
+		net.AddServer(serverName, servers[i])
 	}
 
-	kv := lsm.NewKVStore(rootDir)
+	for i := 0; i < serverCount; i++ {
+		nodeDir := fmt.Sprintf("./data/node_%d", i)
+		os.MkdirAll(nodeDir, 0755)
+		// 3. 初始化 Raft 的物理持久化器
+		persister := raft.MakePersister(nodeDir + "/raft_state.bin")
 
-	// 4. 通过公开的 Len() 方法安全地获取数据量
-	count := kv.Len()
-	fmt.Printf("[系统] 数据恢复完成！当前包含 %d 条数据。\n", count)
-
-	// 5. 启动简单的交互式命令行循环 (MVP 客户端)
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print("\nkv> ")
-		if !scanner.Scan() {
-			break
+		// 4. 连接网络端点 (告诉当前节点，其他兄弟是谁)
+		peers := make([]*labrpc.ClientEnd, serverCount)
+		for j := 0; j < serverCount; j++ {
+			if j != i {
+				// 注意：在实际的 labrpc 测试中，需要更复杂的网络连线
+				// 这里做了简化，让端点互相可见
+				clientName := fmt.Sprintf("client-%d-to-%d", i, j)
+				peers[j] = net.MakeEnd(clientName)
+				net.Connect(clientName, fmt.Sprintf("server-%d", j))
+				net.Enable(clientName, true)
+			}
 		}
 
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
+		applyCh := make(chan raftapi.ApplyMsg)
+		rf := raft.Make(peers, i, persister, applyCh)
 
-		// 按空格分割输入的命令
-		parts := strings.Split(line, " ")
-		cmd := strings.ToLower(parts[0])
+		// 【🔥 最关键的连线步骤】：将 Raft 对象注册为 RPC 服务
+		// 只有加了这一步，底层的 labrpc 才知道怎么把 RequestVote 路由给 rf
+		svc := labrpc.MakeService(rf)
+		servers[i].AddService(svc)
 
-		switch cmd {
-		case "put":
-			if len(parts) != 3 {
-				fmt.Println("用法: put <key> <value>")
-				continue
-			}
-			if err := kv.Put(parts[1], parts[2]); err != nil {
-				fmt.Printf("写入失败: %v\n", err)
-			} else {
-				fmt.Println("写入成功")
-			}
-
-		case "get":
-			if len(parts) != 2 {
-				fmt.Println("用法: get <key>")
-				continue
-			}
-			val, exists := kv.Get(parts[1])
-			if exists {
-				fmt.Printf("值: %s\n", val)
-			} else {
-				fmt.Println("错误: Key 不存在")
-			}
-
-		case "del":
-			if len(parts) != 2 {
-				fmt.Println("用法: del <key>")
-				continue
-			}
-			if err := kv.Delete(parts[1]); err != nil {
-				fmt.Printf("删除失败: %v\n", err)
-			} else {
-				fmt.Println("删除成功")
-			}
-
-		case "exit", "quit":
-			fmt.Println("关闭系统")
-			return
-
-		default:
-			fmt.Println("未知命令。支持的命令: put, get, del, exit")
-		}
+		kvStores[i] = store.NewKVStore(nodeDir, rf, applyCh)
 	}
+
+	fmt.Println("Cluster starting, waiting for leader election...")
+	time.Sleep(3 * time.Second)
+	fmt.Println("Cluster ready!")
+
+	// 【修改点】：直接调用 API 层的启动函数，整个世界的运转交给了这一行！
+	api.StartGateway(kvStores, ":8080")
 }

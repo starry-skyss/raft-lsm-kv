@@ -7,55 +7,55 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"raft-lsm-kv/internal/wal"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"raft-lsm-kv/internal/wal"
 )
 
 // ================= 后台引擎：Flush =================
 
 // checkAndFlush 检查容量并在需要时触发后台落盘
-func (kv *KVStore) checkAndFlush() {
+func (db *DB) checkAndFlush() {
 	// 假设阈值是 4096 字节 (4KB)
-	if kv.memTable.size >= 4096 {
-		if kv.immTable != nil {
+	if db.memTable.size >= 4096 {
+		if db.immTable != nil {
 			// MVP 阶段简单处理：如果上一波还没落盘完，新的一波又满了，直接阻塞等待（反压）
 			fmt.Println("Warning: Write too fast, waiting for previous flush...")
 			return
 		}
-		if kv.nextwal== nil {
+		if db.nextwal== nil {
 			fmt.Println("Warning: Write too fast, waiting for previous wal split...")
 			return
 		}
 		//切换memtable
-		kv.immTable = kv.memTable
-		kv.memTable = NewMemTable()
+		db.immTable = db.memTable
+		db.memTable = NewMemTable()
 		//切分WAL
-		oldWal := kv.wal
-		kv.wal = kv.nextwal
-		kv.nextwal = nil
+		oldWal := db.wal
+		db.wal = db.nextwal
+		db.nextwal = nil
 
 		// 💡 架构闭环: 切分 WAL 是为了让新的写入继续记录到新的日志文件中，旧的日志文件则交给后台线程处理，避免写入被落盘阻塞。
 		select {
-		case kv.walNotifyCh <- struct{}{}:
+		case db.walNotifyCh <- struct{}{}:
 		default:
 		}
 
-		go kv.flush(kv.immTable, oldWal)
+		go db.flush(db.immTable, oldWal)
 	}
 }
 
 // flush 是后台写盘任务的骨架
-func (kv *KVStore) flush(imm *MemTable, oldWal *wal.WAL) {
+func (db *DB) flush(imm *MemTable, oldWal *wal.WAL) {
 	if imm == nil || len(imm.pairs) == 0 {
 		return
 	}
 
-	fileID := kv.reserveNextFileID()
+	fileID := db.reserveNextFileID()
 
-	filename := filepath.Join(kv.sstDir, fmt.Sprintf("%06d.sst", fileID))
+	filename := filepath.Join(db.sstDir, fmt.Sprintf("%06d.sst", fileID))
 
 	size, index, err := writeSSTableFromMem(filename, imm)
 	if err != nil {
@@ -74,30 +74,30 @@ func (kv *KVStore) flush(imm *MemTable, oldWal *wal.WAL) {
 		Index:  index,
 	}
 
-	kv.installFlushedTable(meta, oldWal)
+	db.installFlushedTable(meta, oldWal)
 
 	fmt.Printf("Flush completed! Created %s (Size: %d bytes, Range: [%s] - [%s])\n",
 		filename, size, string(minKey), string(maxKey))
 }
 
-func (kv *KVStore) reserveNextFileID() uint64 {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+func (db *DB) reserveNextFileID() uint64 {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
-	fileID := kv.nextFileID
-	kv.nextFileID++
+	fileID := db.nextFileID
+	db.nextFileID++
 	return fileID
 }
 
-func (kv *KVStore) installFlushedTable(meta *SSTableMeta, oldWal *wal.WAL) {
-	kv.mu.Lock()
+func (db *DB) installFlushedTable(meta *SSTableMeta, oldWal *wal.WAL) {
+	db.mu.Lock()
 
-	kv.sstables = append(kv.sstables, meta)
-	kv.immTable = nil
-	snapshot := append([]*SSTableMeta(nil), kv.sstables...) //当前逻辑顺序快照
-	kv.mu.Unlock()
+	db.sstables = append(db.sstables, meta)
+	db.immTable = nil
+	snapshot := append([]*SSTableMeta(nil), db.sstables...) //当前逻辑顺序快照
+	db.mu.Unlock()
 
-	if err := kv.persistManifest(snapshot); err != nil {
+	if err := db.persistManifest(snapshot); err != nil {
 		fmt.Printf("ERROR: Failed to persist manifest after flush: %v\n", err)
 	}
 
@@ -115,9 +115,9 @@ func (kv *KVStore) installFlushedTable(meta *SSTableMeta, oldWal *wal.WAL) {
 // ================= 后台引擎：Recovery =================
 
 // RecoverFromWAL 负责在系统启动时，调用 wal 的重放功能
-func (kv *KVStore) RecoverFromWAL() error {
+func (db *DB) RecoverFromWAL() error {
 // 1. 扫盘：读取 wal 目录下的所有文件
-    files, err := os.ReadDir(kv.walDir)
+    files, err := os.ReadDir(db.walDir)
     if err != nil {
         return err
     }
@@ -139,7 +139,7 @@ func (kv *KVStore) RecoverFromWAL() error {
 
     // 3. 核心逻辑：挨个回放
     for _, id := range walIDs {
-        walPath := filepath.Join(kv.walDir, fmt.Sprintf("%06dwal.log", id))
+        walPath := filepath.Join(db.walDir, fmt.Sprintf("%06dwal.log", id))
         
         // TODO: (你来主笔)
         // 3.1 你需要写代码去临时打开这个 walPath 文件进行读取
@@ -151,9 +151,9 @@ func (kv *KVStore) RecoverFromWAL() error {
 			continue
 		}
 		err=curwal.Replay(func(key, val string) {
-			kv.memTable.Put([]byte(key), []byte(val))
+			db.memTable.Put([]byte(key), []byte(val))
 		}, func(key string) {
-			kv.memTable.Put([]byte(key), nil)
+			db.memTable.Put([]byte(key), nil)
 		})
 		if err!=nil{
 			fmt.Printf("ERROR: Failed to replay WAL file %s: %v\n", walPath, err)
@@ -165,17 +165,17 @@ func (kv *KVStore) RecoverFromWAL() error {
     // 遍历结束后，你需要根据最大的 walID，来更新 kv.walFileID。
     // 如果没有任何旧文件（第一次启动），kv.walFileID 应该设为什么？
 	if len(walIDs)>0{
-		kv.walFileID=walIDs[len(walIDs)-1]+1
+		db.walFileID=walIDs[len(walIDs)-1]+1
 	}else{
-		kv.walFileID=1
+		db.walFileID=1
 	}
     return nil
 }
 
 // loadSSTables 扫描数据目录下的 .sst 文件，校验 Magic Number，
 // 读取文件尾部的 Index Block 构建出内存索引结构（SSTableMeta），最后根据 Manifest 恢复正确的逻辑文件层级顺序
-func (kv *KVStore) loadSSTables() error {
-	files, err := os.ReadDir(kv.sstDir)
+func (db *DB) loadSSTables() error {
+	files, err := os.ReadDir(db.sstDir)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (kv *KVStore) loadSSTables() error {
 		var fileID uint64
 		fmt.Sscanf(f.Name(), "%06d.sst", &fileID)
 
-		filePath := filepath.Join(kv.sstDir, f.Name())
+		filePath := filepath.Join(db.sstDir, f.Name())
 		file, err := os.Open(filePath)
 		if err != nil {
 			return err
@@ -283,42 +283,42 @@ func (kv *KVStore) loadSSTables() error {
 		}
 		loadedMetas = append(loadedMetas, meta)
 
-		kv.bumpNextFileID(fileID)
+		db.bumpNextFileID(fileID)
 	}
 
 	sort.Slice(loadedMetas, func(i, j int) bool {
 		return loadedMetas[i].FileID < loadedMetas[j].FileID
 	})
 
-	reordered, err := kv.applyManifestOrder(loadedMetas)
+	reordered, err := db.applyManifestOrder(loadedMetas)
 	if err != nil {
 		return err
 	}
 
-	kv.sstables = reordered
+	db.sstables = reordered
 	return nil
 }
 
-func (kv *KVStore) bumpNextFileID(fileID uint64) {
-	if fileID >= kv.nextFileID {
-		kv.nextFileID = fileID + 1
+func (db *DB) bumpNextFileID(fileID uint64) {
+	if fileID >= db.nextFileID {
+		db.nextFileID = fileID + 1
 	}
 }
 
 // 提取文件 ID 列表并以逗号分隔追加写入 manifest.log。重启时只需读取最后一行即可恢复表顺序
-func (kv *KVStore) persistManifest(snapshot []*SSTableMeta) error {
+func (db *DB) persistManifest(snapshot []*SSTableMeta) error {
 	ids := make([]string, 0, len(snapshot))
 	for _, meta := range snapshot {
 		ids = append(ids, strconv.FormatUint(meta.FileID, 10))
 	}
 
 	line := strings.Join(ids, ",") + "\n"
-	manifestDir := filepath.Dir(kv.manifestPath)
+	manifestDir := filepath.Dir(db.manifestPath)
 	if err := os.MkdirAll(manifestDir, 0755); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(kv.manifestPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(db.manifestPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -331,8 +331,8 @@ func (kv *KVStore) persistManifest(snapshot []*SSTableMeta) error {
 }
 
 // 读取 manifest.log 最后一行有效记录，对物理文件列表进行重排，确保 Get 查询时能够按从新到旧的正确顺序遍历
-func (kv *KVStore) applyManifestOrder(loadedMetas []*SSTableMeta) ([]*SSTableMeta, error) {
-	data, err := os.ReadFile(kv.manifestPath)
+func (db *DB) applyManifestOrder(loadedMetas []*SSTableMeta) ([]*SSTableMeta, error) {
+	data, err := os.ReadFile(db.manifestPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return loadedMetas, nil
@@ -390,54 +390,54 @@ func (kv *KVStore) applyManifestOrder(loadedMetas []*SSTableMeta) ([]*SSTableMet
 // ================= 后台引擎：Compaction =================
 
 // StartCompactionLoop 启动一个后台 goroutine，定期检查是否需要合并 SSTable 文件，并执行合并
-func (kv *KVStore) StartCompactionLoop() {
-	if kv.compactionInterval <= 0 {
-		kv.compactionInterval = 10 * time.Second
+func (db *DB) StartCompactionLoop() {
+	if db.compactionInterval <= 0 {
+		db.compactionInterval = 10 * time.Second
 	}
 
 	go func() {
-		ticker := time.NewTicker(kv.compactionInterval)
+		ticker := time.NewTicker(db.compactionInterval)
 		defer ticker.Stop()
 
 		for range ticker.C {
-			if !kv.needCompaction() {
+			if !db.needCompaction() {
 				continue
 			}
-			if err := kv.doCompaction(); err != nil {
+			if err := db.doCompaction(); err != nil {
 				fmt.Printf("ERROR: compaction failed: %v\n", err)
 			}
 		}
 	}()
 }
 
-func (kv *KVStore) needCompaction() bool {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
+func (db *DB) needCompaction() bool {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
 
-	return len(kv.sstables) >= kv.compactionThreshold
+	return len(db.sstables) >= db.compactionThreshold
 }
 
 // pickCompactionFiles 根据 compaction 策略选择需要合并的 SSTable 文件列表。
 // 这里我们简单实现了 tiered 策略：选最旧的 4 个文件进行合并。
-func (kv *KVStore) pickCompactionFiles() []*SSTableMeta {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
+func (db *DB) pickCompactionFiles() []*SSTableMeta {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
 
-	if len(kv.sstables) < kv.compactionThreshold {
+	if len(db.sstables) < db.compactionThreshold {
 		return nil
 	}
 
-	pickN := kv.compactionThreshold
+	pickN := db.compactionThreshold
 
 	picked := make([]*SSTableMeta, pickN)
-	copy(picked, kv.sstables[:pickN]) // 简化 tiered: 选最旧的 4 个
+	copy(picked, db.sstables[:pickN]) // 简化 tiered: 选最旧的 4 个
 	return picked
 }
 
 // installCompactedTable 将新生成的 SSTable 元信息插入内存列表，并持久化 Manifest 以记录新的文件层级顺序。
 // 旧文件的物理删除留给锁外的 removeObsoleteFiles 来执行，避免长时间持锁。
-func (kv *KVStore) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTableMeta) {
-	kv.mu.Lock()
+func (db *DB) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTableMeta) {
+	db.mu.Lock()
 
 	obsolete := make(map[uint64]struct{}, len(oldSSTs))
 	for _, meta := range oldSSTs {
@@ -445,7 +445,7 @@ func (kv *KVStore) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTable
 	}
 
 	// 容量按“是否有新表”计算，避免预估偏差
-	capHint := len(kv.sstables) - len(oldSSTs)
+	capHint := len(db.sstables) - len(oldSSTs)
 	if capHint < 0 {
 		capHint = 0
 	}
@@ -453,7 +453,7 @@ func (kv *KVStore) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTable
 		capHint++
 	}
 	kept := make([]*SSTableMeta, 0, capHint)
-	for _, meta := range kv.sstables {
+	for _, meta := range db.sstables {
 		if _, ok := obsolete[meta.FileID]; ok {
 			continue
 		}
@@ -462,19 +462,19 @@ func (kv *KVStore) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTable
 	if newSST != nil {
 		kept = append(kept, newSST)
 	}
-	kv.sstables = kept
+	db.sstables = kept
 
-	snapshot := append([]*SSTableMeta(nil), kv.sstables...)
-	kv.mu.Unlock()
+	snapshot := append([]*SSTableMeta(nil), db.sstables...)
+	db.mu.Unlock()
 
-	if err := kv.persistManifest(snapshot); err != nil {
+	if err := db.persistManifest(snapshot); err != nil {
 		fmt.Printf("ERROR: Failed to persist manifest after compaction: %v\n", err)
 	}
 }
 
-func (kv *KVStore) removeObsoleteFiles(oldSSTs []*SSTableMeta) {
+func (db *DB) removeObsoleteFiles(oldSSTs []*SSTableMeta) {
 	for _, meta := range oldSSTs {
-		name := filepath.Join(kv.sstDir, fmt.Sprintf("%06d.sst", meta.FileID))
+		name := filepath.Join(db.sstDir, fmt.Sprintf("%06d.sst", meta.FileID))
 		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
 			fmt.Printf("WARN: Failed to remove obsolete sstable %s: %v\n", name, err)
 		}
@@ -482,8 +482,8 @@ func (kv *KVStore) removeObsoleteFiles(oldSSTs []*SSTableMeta) {
 }
 
 // doCompaction 预留给 Week 4 的后台合并流程。
-func (kv *KVStore) doCompaction() error {
-	oldSSTs := kv.pickCompactionFiles()
+func (db *DB) doCompaction() error {
+	oldSSTs := db.pickCompactionFiles()
 	if len(oldSSTs) == 0 {
 		return nil
 	}
@@ -496,7 +496,7 @@ func (kv *KVStore) doCompaction() error {
 	// 2. 为每个旧表构造迭代器
 	var iters []Iterator
 	for _, meta := range oldSSTs {
-		it, err := NewSSTableIterator(meta, kv.sstDir)
+		it, err := NewSSTableIterator(meta, db.sstDir)
 		if err != nil {
 			// 防御性编程：如果中途打开某个文件失败，必须把前面已经打开的文件句柄关掉，防止 FD 泄露
 			for _, opened := range iters {
@@ -512,14 +512,14 @@ func (kv *KVStore) doCompaction() error {
 
 	// 极端情况：如果合并后所有数据都被相互抵消（比如全是墓碑），可以直接跳过写新表
 	if builder.Len() == 0 {
-		kv.installCompactedTable(nil, oldSSTs) // 从视图中抹除旧表
-		kv.removeObsoleteFiles(oldSSTs)        // 物理删除旧表
+		db.installCompactedTable(nil, oldSSTs) // 从视图中抹除旧表
+		db.removeObsoleteFiles(oldSSTs)        // 物理删除旧表
 		return nil
 	}
 
 	// 4. 为新表分配 ID 并落盘
-	newFileID := kv.reserveNextFileID()
-	filename := filepath.Join(kv.sstDir, fmt.Sprintf("%06d.sst", newFileID))
+	newFileID := db.reserveNextFileID()
+	filename := filepath.Join(db.sstDir, fmt.Sprintf("%06d.sst", newFileID))
 
 	// 💡 工程提示：这里假设我们有 writeSSTableFromPairs 函数，
 	// 它和之前的 writeSSTable 逻辑完全一样，只是输入参数从 *MemTable 变成了 []KVPair。
@@ -537,10 +537,10 @@ func (kv *KVStore) doCompaction() error {
 	}
 
 	// 5. 元数据视图原子替换并持久化 Manifest
-	kv.installCompactedTable(newMeta, oldSSTs)
+	db.installCompactedTable(newMeta, oldSSTs)
 
 	// 6. 锁外进行安全的物理文件清理
-	kv.removeObsoleteFiles(oldSSTs)
+	db.removeObsoleteFiles(oldSSTs)
 
 	fmt.Printf("Compaction completed! Replaced %d old files with %s (Size: %d bytes)\n",
 		len(oldSSTs), filename, size)

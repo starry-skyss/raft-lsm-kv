@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-func setupTestKVStore(t *testing.T) (*KVStore, string) {
+func setupTestKVStore(t *testing.T) (*DB, string) {
 	t.Helper()
 
 	rootDir := t.TempDir()
-	kv := NewKVStore(rootDir)
+	kv := NewDB(rootDir)
 	if kv == nil {
 		t.Fatal("NewKVStore returned nil")
 	}
@@ -126,7 +126,7 @@ func TestKVStore_FlushAndSSTableRead(t *testing.T) {
 func TestKVStore_CrashAndRecovery(t *testing.T) {
 	rootDir := t.TempDir()
 
-	kv1 := NewKVStore(rootDir)
+	kv1 := NewDB(rootDir)
 	if kv1 == nil {
 		t.Fatal("NewKVStore returned nil")
 	}
@@ -161,7 +161,7 @@ func TestKVStore_CrashAndRecovery(t *testing.T) {
 		t.Fatalf("late put failed: %v", err)
 	}
 
-	kv2 := NewKVStore(rootDir)
+	kv2 := NewDB(rootDir)
 	if kv2 == nil {
 		t.Fatal("NewKVStore returned nil on recovery")
 	}

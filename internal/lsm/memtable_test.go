@@ -21,7 +21,7 @@ func TestKVStore_Basic(t *testing.T) {
 	defer w.Close()
 
 	// 适配修改 1：传入 tempDir 作为引擎数据目录
-	kv := NewKVStore(w, tempDir)
+	kv := NewDB(w, tempDir)
 
 	err = kv.Put("key1", "value1")
 	if err != nil {
@@ -60,7 +60,7 @@ func TestKVStore_Concurrent(t *testing.T) {
 	}
 	defer w.Close()
 
-	kv := NewKVStore(w, tempDir)
+	kv := NewDB(w, tempDir)
 	var wg sync.WaitGroup
 
 	workers := 100 // 启动 100 个并发写和 100 个并发读
@@ -114,7 +114,7 @@ func TestKVStore_Recovery(t *testing.T) {
 		t.Fatalf("Failed to open WAL: %v", err)
 	}
 
-	kv1 := NewKVStore(w1, tempDir)
+	kv1 := NewDB(w1, tempDir)
 	_ = kv1.Put("recover_key1", "val1")
 	_ = kv1.Put("recover_key2", "val2")
 	_ = kv1.Delete("recover_key1") // 删除 key1，留下 key2
@@ -131,7 +131,7 @@ func TestKVStore_Recovery(t *testing.T) {
 	defer w2.Close()
 
 	// 实例化全新内存表，共用同一个数据目录
-	kv2 := NewKVStore(w2, tempDir)
+	kv2 := NewDB(w2, tempDir)
 
 	err = kv2.RecoverFromWAL()
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type KVStore struct {
+type DB struct {
 	mu                  sync.RWMutex
 	memTable            *MemTable      // 接收写入
 	immTable            *MemTable      // flush 只读表
@@ -29,7 +29,7 @@ type KVStore struct {
 	compactionInterval  time.Duration  //定时 compaction 的时间间隔
 }
 
-func NewKVStore(rootDir string) *KVStore {
+func NewDB(rootDir string) *DB {
 	dataDir := filepath.Join(rootDir, "data")
 	sstDir := filepath.Join(dataDir, "sst")
 	walDir := filepath.Join(dataDir, "wal")
@@ -42,7 +42,7 @@ func NewKVStore(rootDir string) *KVStore {
 		fmt.Printf("ERROR: Failed to create wal directory: %v\n", err)
 	}
 
-	kv := &KVStore{
+	kv := &DB{
 		memTable:            NewMemTable(),
 		immTable:            nil,
 		sstables:            make([]*SSTableMeta, 0),
@@ -96,15 +96,15 @@ func NewKVStore(rootDir string) *KVStore {
 	return kv
 }
 
-func (kv *KVStore) removeAllOldWalFiles() error {
-	files, err := os.ReadDir(kv.walDir)
+func (db *DB) removeAllOldWalFiles() error {
+	files, err := os.ReadDir(db.walDir)
 	if err != nil {
 		return fmt.Errorf("failed to read wal directory: %v", err)
 	}
 
 	for _, file := range files {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".log" {
-			fullPath := filepath.Join(kv.walDir, file.Name())
+			fullPath := filepath.Join(db.walDir, file.Name())
 			if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 				fmt.Printf("ERROR: Failed to remove old WAL file %s: %v\n", fullPath, err)
 			} else {
@@ -115,28 +115,28 @@ func (kv *KVStore) removeAllOldWalFiles() error {
 	return nil
 }
 
-func (kv *KVStore) Put(key, val string) error {
+func (db *DB) Put(key, val string) error {
 	// 1. 独立写 WAL（磁盘 I/O）
 	// WAL 内部自带 w.mu 锁，并发安全，不要把它包在 kv.mu 里面
-	if err := kv.wal.AppendPut(key, val); err != nil {
+	if err := db.wal.AppendPut(key, val); err != nil {
 		return err
 	}
 
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
-	kv.memTable.Put([]byte(key), []byte(val))
-	kv.checkAndFlush()
+	db.memTable.Put([]byte(key), []byte(val))
+	db.checkAndFlush()
 	return nil
 }
 
-func (kv *KVStore) Get(key string) (string, bool) {
-	kv.mu.RLock()
+func (db *DB) Get(key string) (string, bool) {
+	db.mu.RLock()
 	kBytes := []byte(key)
 
 	// 1. 先查 MemTable
-	if val, ok := kv.memTable.Get(kBytes); ok {
-		kv.mu.RUnlock() // 查到就解锁返回
+	if val, ok := db.memTable.Get(kBytes); ok {
+		db.mu.RUnlock() // 查到就解锁返回
 		if val == nil {
 			return "", false
 		}
@@ -144,9 +144,9 @@ func (kv *KVStore) Get(key string) (string, bool) {
 	}
 
 	// 2. 查正在落盘的 immTable
-	if kv.immTable != nil {
-		if val, ok := kv.immTable.Get(kBytes); ok {
-			kv.mu.RUnlock() // 查到就解锁返回
+	if db.immTable != nil {
+		if val, ok := db.immTable.Get(kBytes); ok {
+			db.mu.RUnlock() // 查到就解锁返回
 			if val == nil {
 				return "", false
 			}
@@ -166,11 +166,11 @@ func (kv *KVStore) Get(key string) (string, bool) {
 	// 3. 🌟 核心优化：提取 SSTableMeta 列表的快照！
 	// 我们把当前的文件列表拷贝一份到局部变量中。
 	var sstablesSnapshot []*SSTableMeta
-	sstablesSnapshot = append(sstablesSnapshot, kv.sstables...)
+	sstablesSnapshot = append(sstablesSnapshot, db.sstables...)
 
 	// 列表拷贝完了，立刻释放 RLock！
 	// 从此刻起，后台的 Flush 和前台的 Put 再也不会被慢速磁盘 I/O 阻塞了！
-	kv.mu.RUnlock()
+	db.mu.RUnlock()
 
 	// 4. 在快照上倒序遍历（以下全部是无锁执行）
 	for i := len(sstablesSnapshot) - 1; i >= 0; i-- {
@@ -179,7 +179,7 @@ func (kv *KVStore) Get(key string) (string, bool) {
 			continue
 		}
 
-		val, found := readValFromSSTable(meta, kv.sstDir, kBytes)
+		val, found := readValFromSSTable(meta, db.sstDir, kBytes)
 		if found {
 			if val == nil {
 				return "", false
@@ -208,39 +208,39 @@ func (kv *KVStore) Get(key string) (string, bool) {
 	return "", false
 }
 
-func (kv *KVStore) Delete(key string) error {
+func (db *DB) Delete(key string) error {
 
 	// 同put，磁盘 I/O 移出大锁
-	if err := kv.wal.AppendDelete(key); err != nil {
+	if err := db.wal.AppendDelete(key); err != nil {
 		return err
 	}
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-	kv.memTable.Put([]byte(key), nil)
-	kv.checkAndFlush()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.memTable.Put([]byte(key), nil)
+	db.checkAndFlush()
 	return nil
 }
 
-func (kv *KVStore) Len() int {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
-	return len(kv.memTable.pairs)
+func (db *DB) Len() int {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	return len(db.memTable.pairs)
 }
 
-func (kv *KVStore) walPreAllocator() {
+func (db *DB) walPreAllocator() {
 	for {
-		<-kv.walNotifyCh // 等待通知
+		<-db.walNotifyCh // 等待通知
 		//创建wal文件
-		newWal, err := wal.OpenWAL(filepath.Join(kv.walDir, fmt.Sprintf("%06dwal.log", kv.walFileID)))
+		newWal, err := wal.OpenWAL(filepath.Join(db.walDir, fmt.Sprintf("%06dwal.log", db.walFileID)))
 		if err != nil {
 			fmt.Printf("ERROR: Failed to pre-allocate WAL file: %v\n", err)
 			time.Sleep(100 * time.Millisecond) // 避免频繁失败时的忙等待
 			continue
 		}
-		kv.mu.Lock()
-		kv.nextwal = newWal
-		kv.walFileID++
-		kv.mu.Unlock()
+		db.mu.Lock()
+		db.nextwal = newWal
+		db.walFileID++
+		db.mu.Unlock()
 
 	}
 }
