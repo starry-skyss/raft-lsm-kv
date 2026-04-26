@@ -1,466 +1,244 @@
-# raft-lsm-kv 项目整体架构说明
+# raft-lsm-kv 项目整体架构说明（基于当前代码）
 
-## 1. 项目目标与当前实现边界
+## 1. 项目定位
 
-这是一个基于 LSM-Tree 思路的 Key-Value 存储原型，当前重点是：
+这是一个“分布式复制 + 本地 LSM 存储”的原型系统：
 
-- 前台读写路径（Put/Get/Delete）
-- WAL 持久化与崩溃恢复
-- MemTable 到 SSTable 的异步 Flush
-- SSTable 索引读取
-- Compaction 的整体架构骨架（触发、选文件、迭代器/merge 接口、原子替换接口）
+- 上层：3 节点 Raft 集群，负责写请求复制与提交。
+- 中层：store 层把 Raft Apply 日志转成状态机操作。
+- 下层：每个节点本地一个 LSM 引擎（MemTable + WAL + SSTable + 后台 Flush + 基础 Compaction）。
+- 对外：一个 HTTP 网关（Gin）统一接收 Put/Get/Delete。
 
-当前不完整部分：
+当前代码已经不是单机 CLI KV 的形态，而是“单机 LSM 内核 + 分布式外壳”的组合架构。
 
+## 2. 分层与目录职责
 
-## 2. 目录与职责
+### 2.1 集群入口与网络
 
-- `cmd/kvnode/main.go`
-- 职责：CLI 入口，初始化目录/WAL/KVStore，提供交互命令循环。
+- cmd/kvnode/main.go
+	- 启动 3 个 Raft 节点和 3 个 store.KVStore。
+	- 通过 labrpc 组网并注册 Raft RPC 服务。
+	- 最后启动 HTTP 网关。
 
-- `internal/wal/wal.go`
-- 职责：WAL 二进制日志写入、重放、清空。
+### 2.2 网关层
 
-- `internal/lsm/memtable.go`
-- 职责：内存有序表（有序切片 + 二分查找）。
+- internal/api/server.go
+	- POST /put：轮询节点，找到 leader 执行写。
+	- DELETE /delete/:key：同样通过 leader 执行删。
+	- GET /get/:key：随机读任一节点（最终一致性读，不保证线性一致）。
 
-- `internal/lsm/sstable_format.go`
-- 职责：SSTable 相关格式常量和元数据结构体定义。
+### 2.3 状态机适配层
 
-- `internal/lsm/sstable_writer.go`
-- 职责：将 MemTable 刷到 .sst 文件（Data Block + Index Block + Footer）。
+- internal/store/store.go
+	- 定义 Op（PUT/DELETE）并提交到 Raft。
+	- 用 waitChans 按 log index 等待 Apply 回执。
+	- applyLoop 从 applyCh 读取已提交日志，真正调用 lsm.DB 执行落地。
 
-- `internal/lsm/sstable_reader.go`
-- 职责：基于内存索引定位并读取目标 Key。
+### 2.4 存储引擎层（LSM）
 
-- `internal/lsm/kvstore.go`
-- 职责：KVStore 主结构、前台 API（Put/Get/Delete/Len）。
+- internal/lsm/kvstore.go
+	- 定义核心引擎 DB。
+	- 维护 memTable / immTable / sstables / WAL 切分状态。
+	- 提供 Put/Get/Delete/Len。
 
-- `internal/lsm/kvstore_compaction.go`
-- 职责：后台相关流程（Flush/Recover/Load/Manifest/Compaction 控制骨架）。
+- internal/lsm/kvstore_compaction.go
+	- Flush、WAL 恢复、SST 加载、Manifest 重排、定时 Compaction 控制。
 
-- `internal/lsm/compaction_iterator.go`
-- 职责：Compaction 迭代器接口与单表迭代器骨架。
+- internal/lsm/memtable.go
+	- 有序切片 + 二分查找实现内存表。
 
-- `internal/lsm/compaction_merge.go`
-- 职责：K 路归并最小堆框架。
+- internal/lsm/sstable_writer.go
+	- 将 KV 对写成 SST（Data blocks + Index block + Footer）。
 
-- `internal/lsm/compaction_builder.go`
-- 职责：Compaction 输出 builder 骨架。
+- internal/lsm/sstable_reader.go
+	- 基于内存索引二分定位 block，再在 block 内线性扫描 key。
 
-- `internal/lsm/*_test.go` 与 `tests/e2e_test.go`
-- 职责：单元/并发/恢复/E2E 测试。
+- internal/lsm/compaction_*.go
+	- 迭代器、K 路归并堆、builder 与 compaction 主流程。
 
-## 3. 核心数据结构说明
+### 2.5 WAL 与 Raft 持久化
 
-## 3.1 WAL 层
+- internal/wal/wal.go
+	- WAL append/replay/delete/clear。
 
-### `type WAL struct`
+- internal/raft/persister.go
+	- Raft 状态持久化到磁盘文件（raft_state.bin）。
 
-- `mu sync.Mutex`
-- 作用：保护 WAL 文件写入串行化，避免多协程写错乱。
+## 3. 核心数据结构
 
-- `file *os.File`
-- 作用：底层日志文件句柄。
+### 3.1 store 层
 
-### `const OpPut, OpDelete`
+- Op
+	- Operation: PUT 或 DELETE
+	- Key / Value
+	- OpId: 请求唯一标识，用于识别领导权变更造成的“同 index 异命令”场景
 
-- `OpPut byte = 0`
-- `OpDelete byte = 1`
-- 作用：WAL 记录类型标识。
+- OpResult
+	- AppliedOp
+	- Err
 
-## 3.2 MemTable 层
+- KVStore
+	- db *lsm.DB
+	- rf raftapi.Raft
+	- applyCh
+	- waitChans map[int]chan OpResult
 
-### `type KVPair struct`
+### 3.2 LSM 层
 
-- `Key []byte`
-- `Value []byte`
-- 语义：`Value == nil` 表示 tombstone（删除标记）。
+- DB
+	- memTable: 当前可写内存表
+	- immTable: 正在刷盘的只读内存表
+	- sstables: 当前逻辑顺序下的 SST 元数据列表
+	- nextFileID: SST 文件号分配器
+	- wal / nextwal / walFileID / walNotifyCh: WAL 分段切分与预分配
+	- sstDir / walDir / manifestPath
+	- compactionThreshold / compactionInterval
 
-### `type MemTable struct`
+- MemTable
+	- pairs []KVPair（按 key 有序）
+	- size（估算内存大小，触发 flush）
 
-- `pairs []KVPair`
-- 作用：按 Key 有序存储；通过二分查找定位。
+- KVPair
+	- Key []byte
+	- Value []byte（nil 表示 tombstone）
 
-- `size int`
-- 作用：粗略跟踪内存占用，用于触发 flush 阈值。
+- SSTableMeta
+	- FileID / MinKey / MaxKey / Size / Index
 
-## 3.3 SSTable 格式层
+- IndexEntry
+	- MaxKey
+	- Handle{Offset, Size}
 
-### `type BlockHandle struct`
+### 3.3 WAL 层
 
-- `Offset uint64`
-- `Size uint64`
-- 作用：描述文件内一个连续块位置（Data/Index 都可）。
+- WAL
+	- mu + file
 
-### `type Footer struct`
+- 记录类型
+	- OpPut = 0
+	- OpDelete = 1
 
-- `IndexHandle BlockHandle`
-- `MagicNumber uint64`
-- 作用：文件尾元数据，定位 Index Block 并校验文件格式。
+## 4. 关键流程（当前实现）
 
-### `type IndexEntry struct`
+### 4.1 启动流程
 
-- `MaxKey []byte`
-- `Handle BlockHandle`
-- 作用：每个 Data Block 的上界键与块句柄，支持二分定位。
+main
+-> 创建 3 个 Raft 节点
+-> 每节点 NewKVStore
+-> NewKVStore 内 NewDB
+-> NewDB: loadSSTables + RecoverFromWAL + 必要时强制 flush 回放数据 + 清理旧 WAL + 打开新活跃 WAL + 启动 compaction loop + 启动 WAL 预分配
+-> StartGateway
 
-### `type SSTableMeta struct`
+### 4.2 写入流程（PUT/DELETE）
 
-- `FileID uint64`
-- `MinKey []byte`
-- `MaxKey []byte`
-- `Size uint64`
-- `Index []IndexEntry`
-- 作用：SSTable 常驻内存元数据，Get 时先用它做范围过滤和索引定位。
+HTTP
+-> api 轮询节点找 leader
+-> store.KVStore.Put/Delete 调用 Raft.Start(op)
+-> 等待 waitChans[index] 回执
+-> applyLoop 收到已提交日志后调用 db.Put/Delete
+-> db.Put/Delete 先写当前 WAL，再改 memTable
+-> 达到阈值后切换 memTable->immTable、切分 WAL、异步 flush
+-> flush 写 SST，更新 sstables，落 manifest，删除旧 WAL 文件
 
-## 3.4 KVStore 层
+### 4.3 读取流程（GET）
 
-### `type KVStore struct`
+HTTP
+-> api 随机选一个节点
+-> store.KVStore.Get
+-> db.Get
+-> 查 memTable
+-> 查 immTable
+-> 拷贝 sstables 快照后释放读锁
+-> 倒序查 SST（新到旧），先范围过滤，再索引定位 block，再块内扫描
 
-- 并发控制：`mu sync.RWMutex`
-- 内存态：`memTable`, `immTable`
-- 磁盘态：`sstables []*SSTableMeta`
-- 文件编号：`nextFileID uint64`
-- 组件依赖：`wal *wal.WAL`
-- 路径配置：`rootDir`, `dataDir`, `sstDir`, `walDir`, `manifestPath`
-- 压实配置：`compactionThreshold int`, `compactionInterval time.Duration`
+### 4.4 崩溃恢复流程
 
-其中 `sstables` 是“逻辑查询顺序”。重启后会通过 manifest 最后一条记录恢复该顺序。
+DB 启动时：
 
-## 3.5 Compaction 骨架层
+1. 扫描并加载 SST 文件，校验 Footer magic。
+2. 读取 manifest 最后一条有效记录恢复逻辑顺序。
+3. 扫描 walDir 下所有 .log，按 wal id 从小到大 replay 到 memTable。
+4. 回放后若 memTable 非空，立即 flush 成 SST。
+5. 清理旧 WAL，创建新活跃 WAL。
 
-### `type Iterator interface`
+## 5. 文件格式与持久化语义
 
-- `Next()`：推进游标
-- `Valid() bool`：是否可读
-- `Key() []byte`：当前 key
-- `Value() []byte`：当前 value
-- `Close()`：释放资源
+### 5.1 WAL 编码
 
-### `type SSTableIterator struct`（未完整实现）
+- Put: [op(1)][keyLen(4)][key][valLen(4)][val]
+- Delete: [op(1)][keyLen(4)][key]
+- 大端编码长度字段。
 
-- `meta *SSTableMeta`
-- `dir string`
-- `key []byte`
-- `value []byte`
-- `valid bool`
+### 5.2 SST 编码
 
-### `type SSTableBuilder struct`
+- Data Record: keyLen(u32 LE) + key + valLen(u32 LE) + val
+- tombstone: valLen = 0xFFFFFFFF
+- Index Entry: maxKeyLen + maxKey + offset(u64 LE) + size(u64 LE)
+- Footer(24B): indexOffset(u64 LE) + indexSize(u64 LE) + magic(u64 LE)
 
-- `pairs []KVPair`
-- 作用：归并输出缓冲。
+### 5.3 Manifest
 
-### `type mergeItem` / `type mergeHeap`
+- 逐行 append 文件 id 序列（逗号分隔）。
+- 恢复时取最后一条有效行重排 sstables 逻辑顺序。
 
-- `mergeItem{iter Iterator, fileID uint64}`
-- `mergeHeap` 实现最小堆，按 key 排序；key 相同按“更新优先”（当前用 fileID 大者优先）。
+## 6. 并发模型与一致性边界
 
-## 4. 关键函数与参数说明（按模块）
+### 6.1 并发控制
 
-## 4.1 入口层
+- DB 使用 RWMutex 保护内存状态。
+- WAL 自带互斥锁，append 串行。
+- Get 采用“锁内拷贝元数据 + 锁外读盘”降低写阻塞。
+- flush/compaction 的元数据替换在写锁内完成，文件删除在锁外执行。
 
-### `func main()`
+### 6.2 一致性语义
 
-流程：
-1. 创建 `./data` 与 `./data/wal`
-2. `wal.OpenWAL(data/wal/wal.log)`
-3. `lsm.NewKVStore(w, ".")`
-4. 启动 CLI 循环：`put/get/del/exit`
+- 写请求：通过 Raft 提交后才应用到状态机，具备复制日志意义上的一致性。
+- 读请求：当前是随机节点本地读，未通过 Raft ReadIndex/lease read，因此不是线性一致读，只能视为最终一致读。
 
-## 4.2 WAL 模块
+## 7. Compaction 当前状态
 
-### `func OpenWAL(filePath string) (*WAL, error)`
+已经具备：
 
-- `filePath`：WAL 文件路径。
-- 返回：WAL 实例与错误。
-- 关键点：以 `O_CREATE|O_APPEND|O_RDWR` 打开。
+- 定时触发框架
+- 选文件策略（默认最旧 N 个）
+- SSTableIterator
+- doMerge（最小堆 K 路归并）
+- 写新 SST + installCompactedTable + 删除旧文件
 
-### `func (w *WAL) AppendPut(key, val string) error`
+当前风险点：
 
-- 参数：业务键值。
-- 行为：编码并追加 `[OpPut, KeyLen, Key, ValLen, Val]`，随后 `Sync`。
+- doMerge 中 fileID 优先级基于迭代器输入顺序的临时编号，不是 SST 真正 FileID，版本优先级语义可能与“新文件覆盖旧文件”预期不完全一致。
 
-### `func (w *WAL) AppendDelete(key string) error`
+## 8. 与早期设计相比的关键变化
 
-- 参数：删除键。
-- 行为：编码并追加 `[OpDelete, KeyLen, Key]`，随后 `Sync`。
+1. LSM 核心结构名为 DB，不再是早期文档中的 KVStore。
+2. WAL 从“单文件 + clear”演进为“分段文件 + 切换 + 旧文件删除”。
+3. 入口从 CLI 命令循环变为 3 节点 Raft + HTTP Gateway。
+4. Compaction 从纯 TODO 演进到可执行主流程（仍有优化空间）。
 
-### `func (w *WAL) Replay(onPut func(key, val string), onDelete func(key string)) error`
+## 9. 测试现状
 
-- 参数：回放回调。
-- 行为：从文件头顺序解码日志并回调；结束后 seek 到末尾供后续 append。
+- internal/lsm/kvstore_test.go 覆盖了基础读写、flush、恢复、并发压力。
+- internal/lsm/memtable_test.go 当前仍按旧构造函数签名调用 NewDB，直接导致 go test ./... 构建失败。
+- tests/e2e_test.go 仍按旧 CLI 交互假设设计，和当前 HTTP 网关入口形态不一致。
 
-### `func (w *WAL) Clear() error`
+结论：测试体系处于“新旧架构并存”状态，需要统一。
 
-- 行为：`Truncate(0)` + `Seek(0)` + `Sync`。
-- 用途：Flush 成功后清 WAL，防止无限增长与重复回放。
+## 10. 已知问题与下一步建议
 
-### `func (w *WAL) Close() error`
+1. 读一致性：引入 leader read 或 ReadIndex，避免随机 follower 读旧数据。
+2. Manifest 健壮性：增加 checksum/版本号，避免部分写入引发重排异常。
+3. TableCache：减少 read path 的重复 os.Open 开销。
+4. Compaction 去重优先级：用真实 file generation 或 sequence number 判定新旧。
+5. 测试重构：清理旧 API 假设，补齐 Raft + HTTP 集成测试。
 
-- 行为：`Sync` 后关闭文件句柄。
+## 11. 推荐阅读顺序（按当前代码）
 
-## 4.3 MemTable 模块
-
-### `func NewMemTable() *MemTable`
-
-- 返回：空 MemTable，默认容量 256。
-
-### `func (m *MemTable) Put(key, val []byte)`
-
-- 参数：二进制 key/value。
-- 行为：二分定位后更新或插入；维护 `size`。
-- 语义：`val == nil` 代表 tombstone。
-
-### `func (m *MemTable) Get(key []byte) ([]byte, bool)`
-
-- 返回：命中值与是否命中。
-- 注意：命中 tombstone 时会返回 `(nil, true)`。
-
-## 4.4 KVStore 前台 API
-
-### `func NewKVStore(w *wal.WAL, rootDir string) *KVStore`
-
-- `w`：注入 WAL 组件。
-- `rootDir`：项目根路径（内部构造 `rootDir/data/...`）。
-- 行为：
-1. 创建 `data/sst`、`data/wal`
-2. 初始化默认参数（threshold=4, interval=10s）
-3. `loadSSTables()`
-4. `RecoverFromWAL()`
-5. `StartCompactionLoop()`
-
-### `func (kv *KVStore) Put(key, val string) error`
-
-- 参数：字符串键值。
-- 写路径：
-1. 先 `wal.AppendPut`
-2. 再加锁写 `memTable.Put`
-3. `checkAndFlush` 决定是否异步 flush
-
-### `func (kv *KVStore) Get(key string) (string, bool)`
-
-- 读路径优先级：
-1. `memTable`
-2. `immTable`
-3. `sstables`（倒序，越新越先查）
-
-- 并发优化：
-- 先在读锁内复制 `sstables` 快照
-- 释放读锁后进行慢速磁盘 I/O，降低对写入阻塞
-
-### `func (kv *KVStore) Delete(key string) error`
-
-- 写路径：
-1. 先 `wal.AppendDelete`
-2. 加锁写入 tombstone：`memTable.Put(key,nil)`
-3. `checkAndFlush`
-
-### `func (kv *KVStore) Len() int`
-
-- 返回当前 memTable 中的 pair 数，不含 sstable 数量。
-
-## 4.5 Flush / Recovery / Load / Manifest / Compaction 控制
-
-### `func (kv *KVStore) checkAndFlush()`
-
-- 条件：`memTable.size >= 4096`
-- 行为：
-- 若 `immTable != nil`，打印 backpressure 警告并返回
-- 否则切换 `immTable = memTable`，新建 memTable，后台 goroutine 调 `flush`
-
-### `func (kv *KVStore) flush(imm *MemTable)`
-
-- 参数：只读 immTable。
-- 行为：
-1. `reserveNextFileID`
-2. 调 `writeSSTable`
-3. 组装 `SSTableMeta`
-4. `installFlushedTable`
-
-### `func (kv *KVStore) reserveNextFileID() uint64`
-
-- 作用：在锁内分配全局递增 file id。
-
-### `func (kv *KVStore) installFlushedTable(meta *SSTableMeta)`
-
-- 作用：
-1. 锁内 append 到 `sstables`，清空 `immTable`
-2. 锁外 `persistManifest`
-3. 调 `wal.Clear`
-
-### `func (kv *KVStore) RecoverFromWAL() error`
-
-- 行为：调用 `wal.Replay`，将 put/delete 回放到 `memTable`。
-
-### `func (kv *KVStore) loadSSTables() error`
-
-- 行为：
-1. 扫描 `sstDir` 下 `.sst`
-2. 读取 footer 校验 magic
-3. 加载 index block 到内存
-4. 读取最小 key 组装 `SSTableMeta`
-5. `bumpNextFileID`
-6. 按 `FileID` 排序
-7. `applyManifestOrder` 恢复逻辑顺序
-
-### `func (kv *KVStore) bumpNextFileID(fileID uint64)`
-
-- 作用：保证 `nextFileID = max(nextFileID, fileID+1)`。
-
-### `func (kv *KVStore) persistManifest(snapshot []*SSTableMeta) error`
-
-- 参数：当前逻辑顺序快照。
-- 行为：提取 file id 列表并 append 一行到 `manifest.log`。
-
-### `func (kv *KVStore) applyManifestOrder(loadedMetas []*SSTableMeta) ([]*SSTableMeta, error)`
-
-- 参数：扫描加载出的 metas。
-- 行为：读取 manifest 最后一条有效行重排；没出现的 id 追加到尾部。
-
-### `func (kv *KVStore) StartCompactionLoop()`
-
-- 行为：起后台 ticker（默认 10s）循环触发压实检查。
-
-### `func (kv *KVStore) needCompaction() bool`
-
-- 策略：`len(sstables) >= compactionThreshold`。
-
-### `func (kv *KVStore) pickCompactionFiles() []*SSTableMeta`
-
-- 简化 tiered 策略：选最旧的 N 个（当前 N=4）。
-
-### `func (kv *KVStore) installCompactedTable(newSST *SSTableMeta, oldSSTs []*SSTableMeta)`
-
-- 参数：新表 meta + 被替换旧表列表。
-- 行为：
-1. 写锁内从 `sstables` 删除 old 并追加 new
-2. 锁外 `persistManifest`
-
-### `func (kv *KVStore) removeObsoleteFiles(oldSSTs []*SSTableMeta)`
-
-- 行为：遍历 old tables，`os.Remove` 物理删除旧文件。
-
-### `func (kv *KVStore) doCompaction() error`
-
-- 当前：仅完成 pick 文件，merge/写新表/替换/删除仍是 TODO。
-
-## 4.6 SSTable 写入模块
-
-### `func writeSSTable(filename string, imm *MemTable) (uint64, []IndexEntry, error)`
-
-- `filename`：输出文件名（如 `000001.sst`）
-- `imm`：输入有序数据
-- 返回：写入字节数、内存索引、错误
-
-输出文件布局：
-
-1. Data Blocks
-- 记录编码：`keyLen(u32) + key + valLen(u32) + val`
-- tombstone：`valLen = 0xFFFFFFFF`
-
-2. Index Block
-- 条目编码：`maxKeyLen(u32) + maxKey + offset(u64) + size(u64)`
-
-3. Footer (24 bytes)
-- `indexOffset(u64) + indexSize(u64) + magic(u64)`
-
-## 4.7 SSTable 读取模块
-
-### `func readValFromSSTable(meta *SSTableMeta, dir string, targetKey []byte) ([]byte, bool)`
-
-- 参数：
-- `meta`：内存索引元信息
-- `dir`：sst 目录
-- `targetKey`：查询 key
-
-- 行为：
-1. 在 `meta.Index` 中二分找候选 Data Block
-2. 打开对应文件并 `ReadAt` 读整个 block
-3. 在 block 内顺序扫描记录
-4. 命中返回 value（tombstone 返回 `nil,true`）
-
-## 4.8 Compaction 迭代器 / merge / builder（架构骨架）
-
-### `func NewSSTableIterator(meta *SSTableMeta, dir string) (*SSTableIterator, error)`
-
-- 当前仅做参数校验，未实际打开文件并定位第一条。
-
-### `func (it *SSTableIterator) Next()/Valid()/Key()/Value()/Close()`
-
-- 接口已就位，具体扫描逻辑待实现。
-
-### `func doMerge(iters []Iterator) *SSTableBuilder`
-
-- 行为：
-1. 初始化最小堆
-2. 逐个弹出最小 key 记录写入 builder
-3. 推进来源迭代器并回堆
-4. 去重处理：同 key 只保留优先记录
-5. 关闭全部迭代器
-
-### `func (b *SSTableBuilder) Append(key, value []byte)`
-
-- 行为：追加输出；如果连续同 key，覆盖最后一条。
-
-## 5. 端到端调用链
-
-## 5.1 启动恢复链
-
-`main -> OpenWAL -> NewKVStore -> loadSSTables -> applyManifestOrder -> RecoverFromWAL -> StartCompactionLoop`
-
-## 5.2 Put 链
-
-`Put -> WAL.AppendPut -> MemTable.Put -> checkAndFlush -> (异步) flush -> writeSSTable -> installFlushedTable -> persistManifest -> WAL.Clear`
-
-## 5.3 Delete 链
-
-`Delete -> WAL.AppendDelete -> MemTable.Put(tombstone) -> checkAndFlush ...`
-
-## 5.4 Get 链
-
-`Get -> MemTable -> immTable -> sstables(倒序) -> readValFromSSTable`
-
-## 5.5 计划中的 Compaction 链（目标态）
-
-`StartCompactionLoop -> needCompaction -> pickCompactionFiles -> NewSSTableIterator* -> doMerge -> write new sst -> installCompactedTable -> persistManifest -> removeObsoleteFiles`
-
-## 6. 并发与一致性设计要点
-
-- WAL 写在 kv 大锁外执行，降低临界区时长。
-- Get 的磁盘读取在释放 RLock 后执行，减少写阻塞。
-- `nextFileID` 分配有锁保护，避免并发重复文件名。
-- 元数据替换（flush/compaction）通过写锁做原子更新。
-- Manifest 在元数据更新后写入，重启可恢复逻辑顺序。
-
-## 7. 测试覆盖说明
-
-- `internal/lsm/memtable_test.go`
-- 基础读写删、并发读写、恢复链路。
-
-- `internal/lsm/kvstore_test.go`
-- 基础操作、大量 flush、高并发竞态、崩溃重启恢复。
-
-- `tests/e2e_test.go`
-- CLI 端到端验证（构建二进制并执行 put/get/exit）。
-
-## 8. 已知风险与优化方向
-
-- WAL 清空时机在每次 flush 后立即执行，若未来支持多个 imm/并行 flush，需要引入更严格的 WAL segment 管理。
-- Manifest 目前是 append 日志，无 checksum/版本号，可考虑加入事务标记与校验。
-- `readValFromSSTable` 每次查询都 `os.Open`，可引入 TableCache 降低 syscall 开销。
-- Compaction 尚未真正落地，当前只完成控制面与接口面。
-
-## 9. 快速阅读建议
-
-建议按以下顺序读代码：
-
-1. `cmd/kvnode/main.go`
-2. `internal/lsm/kvstore.go`
-3. `internal/lsm/kvstore_compaction.go`
-4. `internal/wal/wal.go`
-5. `internal/lsm/sstable_writer.go` + `internal/lsm/sstable_reader.go`
-6. `internal/lsm/compaction_*.go`
-7. `internal/lsm/kvstore_test.go` + `tests/e2e_test.go`
-
-这样可以先建立全局调用图，再看细节格式与边界条件。
+1. cmd/kvnode/main.go
+2. internal/api/server.go
+3. internal/store/store.go
+4. internal/lsm/kvstore.go
+5. internal/lsm/kvstore_compaction.go
+6. internal/lsm/sstable_writer.go + internal/lsm/sstable_reader.go
+7. internal/wal/wal.go
+8. internal/lsm/compaction_iterator.go + internal/lsm/compaction_merge.go

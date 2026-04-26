@@ -25,7 +25,7 @@ func (db *DB) checkAndFlush() {
 			fmt.Println("Warning: Write too fast, waiting for previous flush...")
 			return
 		}
-		if db.nextwal== nil {
+		if db.nextwal == nil {
 			fmt.Println("Warning: Write too fast, waiting for previous wal split...")
 			return
 		}
@@ -76,8 +76,8 @@ func (db *DB) flush(imm *MemTable, oldWal *wal.WAL) {
 
 	db.installFlushedTable(meta, oldWal)
 
-	fmt.Printf("Flush completed! Created %s (Size: %d bytes, Range: [%s] - [%s])\n",
-		filename, size, string(minKey), string(maxKey))
+	// fmt.Printf("Flush completed! Created %s (Size: %d bytes, Range: [%s] - [%s])\n",
+	// 	filename, size, string(minKey), string(maxKey))
 }
 
 func (db *DB) reserveNextFileID() uint64 {
@@ -116,60 +116,60 @@ func (db *DB) installFlushedTable(meta *SSTableMeta, oldWal *wal.WAL) {
 
 // RecoverFromWAL 负责在系统启动时，调用 wal 的重放功能
 func (db *DB) RecoverFromWAL() error {
-// 1. 扫盘：读取 wal 目录下的所有文件
-    files, err := os.ReadDir(db.walDir)
-    if err != nil {
-        return err
-    }
+	// 1. 扫盘：读取 wal 目录下的所有文件
+	files, err := os.ReadDir(db.walDir)
+	if err != nil {
+		return err
+	}
 
-    var walIDs []uint64
-    for _, f := range files {
-        if filepath.Ext(f.Name()) == ".log" {
-            var id uint64
-            // 假设文件名是 000001wal.log
-            fmt.Sscanf(f.Name(), "%06dwal.log", &id)
-            walIDs = append(walIDs, id)
-        }
-    }
+	var walIDs []uint64
+	for _, f := range files {
+		if filepath.Ext(f.Name()) == ".log" {
+			var id uint64
+			// 假设文件名是 000001wal.log
+			fmt.Sscanf(f.Name(), "%06dwal.log", &id)
+			walIDs = append(walIDs, id)
+		}
+	}
 
-    // 2. 排序：确保从小到大顺序回放
-    sort.Slice(walIDs, func(i, j int) bool {
-        return walIDs[i] < walIDs[j]
-    })
+	// 2. 排序：确保从小到大顺序回放
+	sort.Slice(walIDs, func(i, j int) bool {
+		return walIDs[i] < walIDs[j]
+	})
 
-    // 3. 核心逻辑：挨个回放
-    for _, id := range walIDs {
-        walPath := filepath.Join(db.walDir, fmt.Sprintf("%06dwal.log", id))
-        
-        // TODO: (你来主笔)
-        // 3.1 你需要写代码去临时打开这个 walPath 文件进行读取
-        // 3.2 调用这个旧 wal 的 Replay 方法把数据塞进 kv.memTable
-        // 3.3 回放完了之后，如何处理这个已经没用的旧文件？(提示：数据已经在 MemTable 里了)
-		curwal,err:=wal.OpenWAL(walPath)
-		if err!=nil{
+	// 3. 核心逻辑：挨个回放
+	for _, id := range walIDs {
+		walPath := filepath.Join(db.walDir, fmt.Sprintf("%06dwal.log", id))
+
+		// TODO: (你来主笔)
+		// 3.1 你需要写代码去临时打开这个 walPath 文件进行读取
+		// 3.2 调用这个旧 wal 的 Replay 方法把数据塞进 kv.memTable
+		// 3.3 回放完了之后，如何处理这个已经没用的旧文件？(提示：数据已经在 MemTable 里了)
+		curwal, err := wal.OpenWAL(walPath)
+		if err != nil {
 			fmt.Printf("ERROR: Failed to open WAL file %s for recovery: %v\n", walPath, err)
 			continue
 		}
-		err=curwal.Replay(func(key, val string) {
+		err = curwal.Replay(func(key, val string) {
 			db.memTable.Put([]byte(key), []byte(val))
 		}, func(key string) {
 			db.memTable.Put([]byte(key), nil)
 		})
-		if err!=nil{
+		if err != nil {
 			fmt.Printf("ERROR: Failed to replay WAL file %s: %v\n", walPath, err)
 		}
 		curwal.Close()
-    }
-
-    // 4. TODO: (你来主笔) 确定下一个新 WAL 的 ID
-    // 遍历结束后，你需要根据最大的 walID，来更新 kv.walFileID。
-    // 如果没有任何旧文件（第一次启动），kv.walFileID 应该设为什么？
-	if len(walIDs)>0{
-		db.walFileID=walIDs[len(walIDs)-1]+1
-	}else{
-		db.walFileID=1
 	}
-    return nil
+
+	// 4. TODO: (你来主笔) 确定下一个新 WAL 的 ID
+	// 遍历结束后，你需要根据最大的 walID，来更新 kv.walFileID。
+	// 如果没有任何旧文件（第一次启动），kv.walFileID 应该设为什么？
+	if len(walIDs) > 0 {
+		db.walFileID = walIDs[len(walIDs)-1] + 1
+	} else {
+		db.walFileID = 1
+	}
+	return nil
 }
 
 // loadSSTables 扫描数据目录下的 .sst 文件，校验 Magic Number，
@@ -542,8 +542,8 @@ func (db *DB) doCompaction() error {
 	// 6. 锁外进行安全的物理文件清理
 	db.removeObsoleteFiles(oldSSTs)
 
-	fmt.Printf("Compaction completed! Replaced %d old files with %s (Size: %d bytes)\n",
-		len(oldSSTs), filename, size)
+	// fmt.Printf("Compaction completed! Replaced %d old files with %s (Size: %d bytes)\n",
+	// 	len(oldSSTs), filename, size)
 
 	return nil
 }

@@ -20,6 +20,8 @@ type Op struct {
 
 type OpResult struct {
 	AppliedOp Op
+	Value     string
+	Exists    bool
 	Err       error
 }
 
@@ -50,15 +52,25 @@ func (kv *KVStore) applyLoop() {
 		if msg.CommandValid {
 			op := msg.Command.(Op)
 			var err error
+			var val string
+			var exists bool
 			switch op.Operation {
 			case "PUT":
 				err = kv.db.Put(op.Key, op.Value)
 			case "DELETE":
 				err = kv.db.Delete(op.Key)
+			case "GET":
+				// GET 操作不修改状态机，只读取当前快照数据
+				val, exists = kv.db.Get(op.Key)
 			}
 			kv.mu.Lock()
 			if ch, ok := kv.waitChans[msg.CommandIndex]; ok {
-				ch <- OpResult{AppliedOp: op, Err: err}
+				ch <- OpResult{
+					AppliedOp: op,
+					Value:     val,
+					Exists:    exists,
+					Err:       err,
+				}
 			}
 			kv.mu.Unlock()
 		}
@@ -90,7 +102,7 @@ func (kv *KVStore) Put(key, value string) error {
 			return fmt.Errorf("leadership changed before commit")
 		}
 		return result.Err
-	case <-time.After(1 * time.Second): // 1秒超时，真实环境可调
+	case <-time.After(5 * time.Second): // 5秒超时，真实环境可调
 		return fmt.Errorf("request timeout")
 	}
 }
@@ -120,11 +132,46 @@ func (kv *KVStore) Delete(key string) error {
 			return fmt.Errorf("leadership changed before commit")
 		}
 		return result.Err
-	case <-time.After(1 * time.Second): // 1秒超时，真实环境可调
+	case <-time.After(5 * time.Second): // 5秒超时，真实环境可调
 		return fmt.Errorf("request timeout")
 	}
 }
 
-func (kv *KVStore) Get(key string) (string, bool) {
-	return kv.db.Get(key)
+// Get 修改为强一致性读：通过 Raft 日志同步
+func (kv *KVStore) Get(key string) (string, bool, error) {
+	op := Op{
+		Operation: "GET",
+		Key:       key,
+		OpId:      time.Now().UnixNano(),
+	}
+
+	index, _, isLeader := kv.rf.Start(op)
+	if !isLeader {
+		return "", false, fmt.Errorf("not leader")
+	}
+
+	// 注册通知管道
+	ch := make(chan OpResult, 1)
+	kv.mu.Lock()
+	kv.waitChans[index] = ch
+	kv.mu.Unlock()
+
+	// 确保退出时清理管道
+	defer func() {
+		kv.mu.Lock()
+		delete(kv.waitChans, index)
+		kv.mu.Unlock()
+	}()
+
+	select {
+	case result := <-ch:
+		// 校验 OpId，防止网络分区导致读取到新 Leader 覆盖后的错误 index 数据
+		if result.AppliedOp.OpId != op.OpId {
+			return "", false, fmt.Errorf("leadership changed before commit")
+		}
+		return result.Value, result.Exists, nil
+
+	case <-time.After(5 * time.Second): // 读请求可能稍慢，给予 5 秒超时
+		return "", false, fmt.Errorf("request timeout")
+	}
 }
