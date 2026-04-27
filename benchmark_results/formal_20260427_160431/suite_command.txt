@@ -1,0 +1,14 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+suite_id: formal_20260427_160431
+suite_root: benchmark_results/formal_20260427_160431
+api_url: http://localhost:8080
+total_requests: 10000
+keyspace: 10000
+prefilln: 10000
+valuesize: 128
+warmup: 100
+timeout: 10s
+concurrencies: 1 10 30 50
+seeds: 1 2 3
+workloads: write_100 read_100 mixed_50_50 read95_write5
+run_stress: false

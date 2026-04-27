@@ -1,0 +1,74 @@
+Benchmark starting
+Run ID: c30_seed2
+Workload: mixed_50_50
+Target URL: http://localhost:8080
+Concurrency: 30, Requests: 10000, Write ratio: 0.5000
+Keyspace: 10000, Value size: 128 bytes, Seed: 2, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m56.876524901s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=1.129423435s
+
+================ Benchmark Results ================
+run_id:           c30_seed2
+workload_name:    mixed_50_50
+concurrency:      30
+write_ratio:      0.5000
+keyspace:         10000
+valuesize:        128
+seed:             2
+prefill:          true
+total_requests:   10000
+success_requests: 9882
+failed_requests:  118
+success_rate:     98.82%
+total_duration:   2m40.936390217s
+total_qps:        62.14
+success_qps:      61.40
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      473.103578ms
+p50_latency:      453.12048ms
+p90_latency:      614.828968ms
+p99_latency:      1.034693062s
+p999_latency:     5.066982718s
+max_latency:      5.475189481s
+---------------------------------------------------
+PUT
+put_total:        4934
+put_success:      4878
+put_failed:       56
+put_avg_latency:  477.824801ms
+put_p50:          460.197262ms
+put_p90:          616.978277ms
+put_p99:          1.04298562s
+put_p999:         5.084212974s
+put_max:          5.324873791s
+---------------------------------------------------
+GET
+get_total:        5066
+get_success:      5004
+get_failed:       62
+get_found:        5004
+get_not_found:    0
+get_avg_latency:  468.505372ms
+get_p50:          446.381619ms
+get_p90:          611.985456ms
+get_p99:          1.029505785s
+get_p999:         5.066982718s
+get_max:          5.475189481s
+---------------------------------------------------
+Errors
+connection_refused: 0
+http_500: 0
+http_503: 107
+not_leader: 0
+other: 0
+request_timeout: 11
+timeout: 0
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/mixed_50_50/c30_seed2/result.json

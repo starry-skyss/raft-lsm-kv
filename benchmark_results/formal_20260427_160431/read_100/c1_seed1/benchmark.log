@@ -1,0 +1,68 @@
+Benchmark starting
+Run ID: c1_seed1
+Workload: read_100
+Target URL: http://localhost:8080
+Concurrency: 1, Requests: 10000, Write ratio: 0.0000
+Keyspace: 10000, Value size: 128 bytes, Seed: 1, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m40.962845911s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=2.516722754s
+
+================ Benchmark Results ================
+run_id:           c1_seed1
+workload_name:    read_100
+concurrency:      1
+write_ratio:      0.0000
+keyspace:         10000
+valuesize:        128
+seed:             1
+prefill:          true
+total_requests:   10000
+success_requests: 10000
+failed_requests:  0
+success_rate:     100.00%
+total_duration:   5m11.955053947s
+total_qps:        32.06
+success_qps:      32.06
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      31.192655ms
+p50_latency:      31.689805ms
+p90_latency:      35.095803ms
+p99_latency:      53.291018ms
+p999_latency:     163.751346ms
+max_latency:      267.800189ms
+---------------------------------------------------
+PUT
+put_total:        0
+put_success:      0
+put_failed:       0
+put_avg_latency:  0s
+put_p50:          0s
+put_p90:          0s
+put_p99:          0s
+put_p999:         0s
+put_max:          0s
+---------------------------------------------------
+GET
+get_total:        10000
+get_success:      10000
+get_failed:       0
+get_found:        10000
+get_not_found:    0
+get_avg_latency:  31.192655ms
+get_p50:          31.689805ms
+get_p90:          35.095803ms
+get_p99:          53.291018ms
+get_p999:         163.751346ms
+get_max:          267.800189ms
+---------------------------------------------------
+Errors
+none
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/read_100/c1_seed1/result.json

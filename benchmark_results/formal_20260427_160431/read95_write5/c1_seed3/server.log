@@ -1,0 +1,5 @@
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:38:20 | 500 | POST | /put

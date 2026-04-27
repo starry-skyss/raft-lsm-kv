@@ -1,0 +1,5 @@
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 17:01:39 | 500 | GET | /get/key_1026

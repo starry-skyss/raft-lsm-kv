@@ -1,0 +1,6 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+api_url: http://localhost:8080
+result_dir: benchmark_results/formal_20260427_160431/write_100/c50_seed3
+CLEAN_DATA: true
+server_command: GOCACHE=/tmp/go-build go run ./cmd/kvnode
+benchmark_command: GOCACHE=/tmp/go-build go run ./tests/benchmark/main.go -u http://localhost:8080 -workload write_100 -c 50 -n 10000 -w 1.0 -keyspace 10000 -valuesize 128 -seed 3 -prefill=false -prefilln 10000 -warmup 100 -timeout 10s -runid c50_seed3 -out benchmark_results/formal_20260427_160431/write_100/c50_seed3/result.json

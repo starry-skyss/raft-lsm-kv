@@ -1,0 +1,21 @@
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:45 | 500 | GET | /get/key_416
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_5093
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_2090
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_8537
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_1481
+[Error] 19:59:46 | 500 | GET | /get/key_8178
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_3970
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_4127
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 19:59:46 | 500 | GET | /get/key_8898

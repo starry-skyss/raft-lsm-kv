@@ -1,0 +1,68 @@
+Benchmark starting
+Run ID: c10_seed1
+Workload: mixed_50_50
+Target URL: http://localhost:8080
+Concurrency: 10, Requests: 10000, Write ratio: 0.5000
+Keyspace: 10000, Value size: 128 bytes, Seed: 1, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m45.867227857s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=1.298007254s
+
+================ Benchmark Results ================
+run_id:           c10_seed1
+workload_name:    mixed_50_50
+concurrency:      10
+write_ratio:      0.5000
+keyspace:         10000
+valuesize:        128
+seed:             1
+prefill:          true
+total_requests:   10000
+success_requests: 10000
+failed_requests:  0
+success_rate:     100.00%
+total_duration:   2m52.530295819s
+total_qps:        57.96
+success_qps:      57.96
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      172.487851ms
+p50_latency:      164.409202ms
+p90_latency:      223.794673ms
+p99_latency:      436.212636ms
+p999_latency:     533.890798ms
+max_latency:      702.283728ms
+---------------------------------------------------
+PUT
+put_total:        5073
+put_success:      5073
+put_failed:       0
+put_avg_latency:  177.910324ms
+put_p50:          168.722257ms
+put_p90:          227.787253ms
+put_p99:          463.530966ms
+put_p999:         553.700141ms
+put_max:          702.283728ms
+---------------------------------------------------
+GET
+get_total:        4927
+get_success:      4927
+get_failed:       0
+get_found:        4927
+get_not_found:    0
+get_avg_latency:  166.904696ms
+get_p50:          159.365607ms
+get_p90:          218.986996ms
+get_p99:          356.294357ms
+get_p999:         516.157274ms
+get_max:          651.188635ms
+---------------------------------------------------
+Errors
+none
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/mixed_50_50/c10_seed1/result.json

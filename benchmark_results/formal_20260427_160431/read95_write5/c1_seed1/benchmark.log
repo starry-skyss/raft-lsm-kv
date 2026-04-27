@@ -1,0 +1,68 @@
+Benchmark starting
+Run ID: c1_seed1
+Workload: read95_write5
+Target URL: http://localhost:8080
+Concurrency: 1, Requests: 10000, Write ratio: 0.0500
+Keyspace: 10000, Value size: 128 bytes, Seed: 1, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m59.872362174s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=2.377547354s
+
+================ Benchmark Results ================
+run_id:           c1_seed1
+workload_name:    read95_write5
+concurrency:      1
+write_ratio:      0.0500
+keyspace:         10000
+valuesize:        128
+seed:             1
+prefill:          true
+total_requests:   10000
+success_requests: 10000
+failed_requests:  0
+success_rate:     100.00%
+total_duration:   5m21.917389663s
+total_qps:        31.06
+success_qps:      31.06
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      32.188569ms
+p50_latency:      31.450657ms
+p90_latency:      34.734489ms
+p99_latency:      154.798986ms
+p999_latency:     248.62732ms
+max_latency:      298.368558ms
+---------------------------------------------------
+PUT
+put_total:        504
+put_success:      504
+put_failed:       0
+put_avg_latency:  39.63029ms
+put_p50:          38.832894ms
+put_p90:          42.062471ms
+put_p99:          162.955105ms
+put_p999:         298.368558ms
+put_max:          298.368558ms
+---------------------------------------------------
+GET
+get_total:        9496
+get_success:      9496
+get_failed:       0
+get_found:        9496
+get_not_found:    0
+get_avg_latency:  31.7936ms
+get_p50:          31.402898ms
+get_p90:          34.007641ms
+get_p99:          154.791218ms
+get_p999:         232.08444ms
+get_max:          288.198737ms
+---------------------------------------------------
+Errors
+none
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/read95_write5/c1_seed1/result.json

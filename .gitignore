@@ -25,6 +25,12 @@ data/
 *.sst
 *.log
 
+# Local benchmark helper scripts
+scripts/
+
+# Benchmark result logs are committed with formal result sets
+!benchmark_results/**/*.log
+
 # IDE 相关
 .idea/
 .vscode/

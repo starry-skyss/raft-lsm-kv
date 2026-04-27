@@ -1,0 +1,68 @@
+Benchmark starting
+Run ID: c1_seed2
+Workload: read95_write5
+Target URL: http://localhost:8080
+Concurrency: 1, Requests: 10000, Write ratio: 0.0500
+Keyspace: 10000, Value size: 128 bytes, Seed: 2, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m59.307032556s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=2.38447241s
+
+================ Benchmark Results ================
+run_id:           c1_seed2
+workload_name:    read95_write5
+concurrency:      1
+write_ratio:      0.0500
+keyspace:         10000
+valuesize:        128
+seed:             2
+prefill:          true
+total_requests:   10000
+success_requests: 10000
+failed_requests:  0
+success_rate:     100.00%
+total_duration:   5m30.955164118s
+total_qps:        30.22
+success_qps:      30.22
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      33.092205ms
+p50_latency:      31.617712ms
+p90_latency:      36.126725ms
+p99_latency:      155.452994ms
+p999_latency:     192.768732ms
+max_latency:      318.698227ms
+---------------------------------------------------
+PUT
+put_total:        469
+put_success:      469
+put_failed:       0
+put_avg_latency:  46.53638ms
+put_p50:          39.337828ms
+put_p90:          46.209003ms
+put_p99:          192.768732ms
+put_p999:         318.698227ms
+put_max:          318.698227ms
+---------------------------------------------------
+GET
+get_total:        9531
+get_success:      9531
+get_failed:       0
+get_found:        9531
+get_not_found:    0
+get_avg_latency:  32.430646ms
+get_p50:          31.547245ms
+get_p90:          34.853198ms
+get_p99:          153.429641ms
+get_p999:         176.298542ms
+get_max:          295.788887ms
+---------------------------------------------------
+Errors
+none
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/read95_write5/c1_seed2/result.json

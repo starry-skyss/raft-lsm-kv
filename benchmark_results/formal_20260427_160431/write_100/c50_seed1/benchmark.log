@@ -1,0 +1,65 @@
+Benchmark starting
+Run ID: c50_seed1
+Workload: write_100
+Target URL: http://localhost:8080
+Concurrency: 50, Requests: 10000, Write ratio: 1.0000
+Keyspace: 10000, Value size: 128 bytes, Seed: 1, Timeout: 10s
+Data preparation reminder:
+- For write-only tests, clear the server data directory before starting the server if you need a clean baseline.
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=983.17179ms
+
+================ Benchmark Results ================
+run_id:           c50_seed1
+workload_name:    write_100
+concurrency:      50
+write_ratio:      1.0000
+keyspace:         10000
+valuesize:        128
+seed:             1
+prefill:          false
+total_requests:   10000
+success_requests: 10000
+failed_requests:  0
+success_rate:     100.00%
+total_duration:   2m7.888416619s
+total_qps:        78.19
+success_qps:      78.19
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      638.00707ms
+p50_latency:      638.837294ms
+p90_latency:      717.759012ms
+p99_latency:      1.136662136s
+p999_latency:     1.208334495s
+max_latency:      1.21795904s
+---------------------------------------------------
+PUT
+put_total:        10000
+put_success:      10000
+put_failed:       0
+put_avg_latency:  638.00707ms
+put_p50:          638.837294ms
+put_p90:          717.759012ms
+put_p99:          1.136662136s
+put_p999:         1.208334495s
+put_max:          1.21795904s
+---------------------------------------------------
+GET
+get_total:        0
+get_success:      0
+get_failed:       0
+get_found:        0
+get_not_found:    0
+get_avg_latency:  0s
+get_p50:          0s
+get_p90:          0s
+get_p99:          0s
+get_p999:         0s
+get_max:          0s
+---------------------------------------------------
+Errors
+none
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/write_100/c50_seed1/result.json

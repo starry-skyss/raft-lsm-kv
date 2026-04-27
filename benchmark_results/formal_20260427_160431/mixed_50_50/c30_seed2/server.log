@@ -1,0 +1,132 @@
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+[Error] 18:50:48 | 503 | GET | /get/key_8025
+[Error] 18:50:48 | 503 | GET | /get/key_9879
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4235
+[Error] 18:50:48 | 503 | GET | /get/key_6536
+[Error] 18:50:48 | 503 | GET | /get/key_8543
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_917
+[Error] 18:50:48 | 503 | GET | /get/key_340
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_8673
+[Error] 18:50:48 | 503 | GET | /get/key_1674
+[Error] 18:50:48 | 503 | GET | /get/key_2739
+[Error] 18:50:48 | 503 | GET | /get/key_6901
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_928
+[Error] 18:50:48 | 503 | GET | /get/key_3203
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_7494
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_1933
+[Error] 18:50:48 | 503 | GET | /get/key_3039
+[Error] 18:50:48 | 503 | GET | /get/key_7644
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_8034
+[Error] 18:50:48 | 503 | GET | /get/key_3699
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_5058
+[Error] 18:50:48 | 503 | GET | /get/key_3541
+[Error] 18:50:48 | 503 | GET | /get/key_8048
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_899
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_7815
+[Error] 18:50:48 | 503 | GET | /get/key_5656
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_3439
+[Error] 18:50:48 | 503 | GET | /get/key_5204
+[Error] 18:50:48 | 503 | GET | /get/key_3252
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_3903
+[Error] 18:50:48 | 503 | GET | /get/key_553
+[Error] 18:50:48 | 503 | GET | /get/key_5221
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_5474
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_8653
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4280
+[Error] 18:50:48 | 503 | GET | /get/key_9126
+[Error] 18:50:48 | 503 | GET | /get/key_7560
+[Error] 18:50:48 | 503 | GET | /get/key_4642
+[Error] 18:50:48 | 503 | GET | /get/key_2298
+[Error] 18:50:48 | 503 | GET | /get/key_7062
+[Error] 18:50:48 | 503 | GET | /get/key_2253
+[Error] 18:50:48 | 503 | GET | /get/key_6354
+[Error] 18:50:48 | 503 | GET | /get/key_7658
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_9981
+[Error] 18:50:48 | 503 | GET | /get/key_2082
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_2828
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4899
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_7350
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4929
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_6955
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_8403
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4915
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_4576
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_2299
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_5035
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_1911
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | POST | /put
+[Error] 18:50:48 | 503 | GET | /get/key_3028
+[Error] 18:50:48 | 503 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | GET | /get/key_1783
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | GET | /get/key_6099
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | GET | /get/key_6682
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | GET | /get/key_8065
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | GET | /get/key_729
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 18:50:52 | 500 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 18:50:53 | 500 | GET | /get/key_9271

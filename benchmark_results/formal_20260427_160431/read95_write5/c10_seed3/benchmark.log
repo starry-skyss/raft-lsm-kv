@@ -1,0 +1,74 @@
+Benchmark starting
+Run ID: c10_seed3
+Workload: read95_write5
+Target URL: http://localhost:8080
+Concurrency: 10, Requests: 10000, Write ratio: 0.0500
+Keyspace: 10000, Value size: 128 bytes, Seed: 3, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 10000 keys...
+Prefill completed: success=10000 failed=0 duration=3m50.403009048s
+
+Running warmup: 100 requests...
+Warmup completed: success=100 failed=0 duration=1.035653176s
+
+================ Benchmark Results ================
+run_id:           c10_seed3
+workload_name:    read95_write5
+concurrency:      10
+write_ratio:      0.0500
+keyspace:         10000
+valuesize:        128
+seed:             3
+prefill:          true
+total_requests:   10000
+success_requests: 9991
+failed_requests:  9
+success_rate:     99.91%
+total_duration:   2m29.612582032s
+total_qps:        66.84
+success_qps:      66.78
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      149.559922ms
+p50_latency:      141.187722ms
+p90_latency:      188.768647ms
+p99_latency:      419.399086ms
+p999_latency:     608.6194ms
+max_latency:      1.146891093s
+---------------------------------------------------
+PUT
+put_total:        513
+put_success:      513
+put_failed:       0
+put_avg_latency:  162.784933ms
+put_p50:          153.283698ms
+put_p90:          200.013682ms
+put_p99:          491.804428ms
+put_p999:         608.65467ms
+put_max:          608.65467ms
+---------------------------------------------------
+GET
+get_total:        9487
+get_success:      9478
+get_failed:       9
+get_found:        9478
+get_not_found:    0
+get_avg_latency:  148.844793ms
+get_p50:          140.749273ms
+get_p90:          187.764314ms
+get_p99:          419.320128ms
+get_p999:         608.6194ms
+get_max:          1.146891093s
+---------------------------------------------------
+Errors
+connection_refused: 0
+http_500: 9
+http_503: 0
+not_leader: 0
+other: 0
+request_timeout: 0
+timeout: 0
+===================================================
+JSON report written to benchmark_results/formal_20260427_160431/read95_write5/c10_seed3/result.json
