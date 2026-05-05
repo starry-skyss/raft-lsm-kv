@@ -1,0 +1,6 @@
+case_id	workload	concurrency	write_ratio	prefill	n	keyspace	prefilln	valuesize	timeout	result_dir
+01	write_100	50	1.0	false	10000	10000	0	128	10s	benchmark_results/diagnostic_20260505_140503/01_write_100_c50
+02	read_100	10	0.0	true	10000	10000	10000	128	10s	benchmark_results/diagnostic_20260505_140503/02_read_100_c10
+03	read_100	30	0.0	true	10000	10000	10000	128	10s	benchmark_results/diagnostic_20260505_140503/03_read_100_c30
+04	read_100	50	0.0	true	10000	10000	10000	128	10s	benchmark_results/diagnostic_20260505_140503/04_read_100_c50
+05	mixed_50_50	30	0.5	true	10000	10000	10000	128	10s	benchmark_results/diagnostic_20260505_140503/05_mixed_50_50_c30

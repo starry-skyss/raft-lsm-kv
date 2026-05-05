@@ -26,7 +26,10 @@ data/
 *.log
 
 # Local benchmark helper scripts
-scripts/
+scripts/*
+!scripts/run_functional_tests.sh
+!scripts/run_recovery_tests.sh
+!scripts/run_diagnostic_suite.sh
 
 # Benchmark result logs are committed with formal result sets
 !benchmark_results/**/*.log

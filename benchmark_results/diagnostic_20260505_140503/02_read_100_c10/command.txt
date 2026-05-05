@@ -1,0 +1,6 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+case_id: 02
+result_dir: benchmark_results/diagnostic_20260505_140503/02_read_100_c10
+cleaned_data_dir: /home/star/projects/kvstore/raft-lsm-kv/data
+server_command: GOCACHE=/tmp/go-build go run ./cmd/kvnode
+benchmark_command: GOCACHE=/tmp/go-build go run ./tests/benchmark/main.go -runid 02_read_100_c10 -workload read_100 -c 10 -n 10000 -w 0.0 -keyspace 10000 -valuesize 128 -seed 1 -prefill=true -prefilln 10000 -warmup 0 -timeout 10s -u http://localhost:8080 -out benchmark_results/diagnostic_20260505_140503/02_read_100_c10/result.json

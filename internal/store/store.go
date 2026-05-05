@@ -175,3 +175,13 @@ func (kv *KVStore) Get(key string) (string, bool, error) {
 		return "", false, fmt.Errorf("request timeout")
 	}
 }
+
+func (kv *KVStore) ActiveWaitChans() int {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	return len(kv.waitChans)
+}
+
+func (kv *KVStore) RaftMetrics() raftapi.RaftMetrics {
+	return kv.rf.DebugMetrics()
+}

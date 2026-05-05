@@ -1,0 +1,415 @@
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_6636
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_9648
+❌ [DEBUG] Get 失败，报错内容: request timeout
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_1548
+[Error] 14:15:40 | 500 | GET | /get/key_538
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_9192
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_6891
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_8486
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_8216
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_7971
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_6495
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_3780
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_98
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_8201
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:40 | 500 | GET | /get/key_5740
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_9992
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_791
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_6308
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_3500
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_1256
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_6446
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_3142
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_9163
+[Error] 14:15:40 | 500 | GET | /get/key_7781
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_2092
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:40 | 500 | GET | /get/key_5470
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:41 | 500 | GET | /get/key_9637
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:41 | 500 | GET | /get/key_8979
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:41 | 500 | GET | /get/key_9752
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:41 | 500 | GET | /get/key_6593
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:41 | 500 | GET | /get/key_8069
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_5114
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_4883
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_928
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_4783
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_6133
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_6211
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_1792
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_1749
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_8446
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_6831
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_21
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_53
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_9030
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_16
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_5772
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_819
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_4923
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_4172
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_2205
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_7835
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_8407
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:15:55 | 500 | GET | /get/key_1672
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_333
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_4544
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_7513
+[Error] 14:15:55 | 500 | GET | /get/key_9374
+[Error] 14:15:55 | 500 | GET | /get/key_1941
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_3430
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_7602
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:15:55 | 500 | GET | /get/key_5302
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:10 | 500 | GET | /get/key_3427
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:10 | 500 | GET | /get/key_7868
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:10 | 500 | GET | /get/key_5281
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:10 | 500 | GET | /get/key_6874
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:10 | 500 | GET | /get/key_2119
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_1142
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_5215
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_1675
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_556
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_4005
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_588
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_1898
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_1738
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_3672
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_3061
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_2025
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_5505
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_9854
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_1397
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:10 | 500 | GET | /get/key_9477
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:25 | 500 | GET | /get/key_1089
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:25 | 500 | GET | /get/key_1716
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_9321
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_5680
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_9090
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_5735
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_8480
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_3581
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_8410
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_7205
+[Error] 14:16:26 | 500 | GET | /get/key_6775
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_5326
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_9216
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_9755
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_9867
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_7293
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_5714
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_317
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_5694
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_8119
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_3557
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_4941
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_8850
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_9205
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:26 | 500 | GET | /get/key_3065
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_254
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_8266
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_9082
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_2013
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:26 | 500 | GET | /get/key_4478
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_6623
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_5880
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_8130
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_9876
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_2865
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_4148
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_948
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_4402
+[Error] 14:16:37 | 500 | GET | /get/key_4140
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_8895
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_9257
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_5731
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_5972
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_9638
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_413
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_6745
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_6898
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:37 | 500 | GET | /get/key_545
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_7590
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_3810
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_6428
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_8815
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_7349
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:38 | 500 | GET | /get/key_175
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_5548
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_2620
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_6238
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_9369
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_134
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_2462
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_4029
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_4780
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_507
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_102
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_8255
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:48 | 500 | GET | /get/key_5280
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_9286
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_2813
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_5266
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_7141
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_3855
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_281
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_5616
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_3002
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_1941
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_297
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_3296
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_5697
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_6757
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_485
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_5415
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:16:55 | 500 | GET | /get/key_9396
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_215
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_1462
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_715
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_2856
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_7376
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_996
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_9227
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_2942
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_7207
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_3465
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_8484
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_8779
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_4488
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:16:55 | 500 | GET | /get/key_5654
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:17:08 | 500 | GET | /get/key_4053
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:17:08 | 500 | GET | /get/key_8680
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:17:08 | 500 | GET | /get/key_8737
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_3391
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_7382
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_8091
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_5519
+[Error] 14:17:08 | 500 | GET | /get/key_1370
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_8006
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_1583
+❌ [DEBUG] Get 失败，报错内容: request timeout
+[Error] 14:17:08 | 500 | GET | /get/key_1278
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_5517
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_7381
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_7346
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_5938
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_1589
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_3575
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_6078
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_3622
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_1204
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_29
+[Error] 14:17:08 | 500 | GET | /get/key_6132
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_3760
+[Error] 14:17:08 | 500 | GET | /get/key_8765
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_6416
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_8321
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_6473
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_4489
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_4390
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 14:17:08 | 500 | GET | /get/key_208

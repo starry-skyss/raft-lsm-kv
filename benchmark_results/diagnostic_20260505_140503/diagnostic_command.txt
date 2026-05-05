@@ -1,0 +1,12 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+suite_id: diagnostic_20260505_140503
+suite_root: benchmark_results/diagnostic_20260505_140503
+api_url: http://localhost:8080
+total_requests: 10000
+keyspace: 10000
+prefilln: 10000
+valuesize: 128
+timeout: 10s
+warmup: 0
+seed: 1
+cleaned_data_dir_per_case: /home/star/projects/kvstore/raft-lsm-kv/data

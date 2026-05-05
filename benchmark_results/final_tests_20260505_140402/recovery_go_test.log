@@ -1,0 +1,17 @@
+=== RUN   TestWALRecoveryPreservesUnflushedWrites
+Removed old WAL file: /tmp/TestWALRecoveryPreservesUnflushedWrites1170763738/001/data/wal/000001wal.log
+Removed old WAL file: /tmp/TestWALRecoveryPreservesUnflushedWrites1170763738/001/data/wal/000002wal.log
+    kvstore_recovery_test.go:39: RECOVERY_RESULT|WAL Recovery|data_scale=2 keys|flush_triggered=false before restart, true during recovery bootstrap|sstable_count_before=0|sstable_count_after=1|manifest_size=2|actual=both WAL keys readable after reopen|pass=true
+--- PASS: TestWALRecoveryPreservesUnflushedWrites (0.05s)
+=== RUN   TestSSTableManifestRecoveryLoadsFlushedData
+Removed old WAL file: /tmp/TestSSTableManifestRecoveryLoadsFlushedData2108360810/001/data/wal/000002wal.log
+Removed old WAL file: /tmp/TestSSTableManifestRecoveryLoadsFlushedData2108360810/001/data/wal/000003wal.log
+    kvstore_recovery_test.go:76: RECOVERY_RESULT|SSTable Manifest Recovery|data_scale=20 keys, value_size=256 bytes|flush_triggered=true|sstable_count_before=1|sstable_count_after=2|manifest_size_before=2|manifest_size_after=6|actual=flushed and recovered keys readable after reopen|pass=true
+--- PASS: TestSSTableManifestRecoveryLoadsFlushedData (0.15s)
+=== RUN   TestTombstoneRecoveryHidesDeletedValue
+Removed old WAL file: /tmp/TestTombstoneRecoveryHidesDeletedValue3142655303/001/data/wal/000001wal.log
+Removed old WAL file: /tmp/TestTombstoneRecoveryHidesDeletedValue3142655303/001/data/wal/000002wal.log
+    kvstore_recovery_test.go:102: RECOVERY_RESULT|Tombstone Recovery|data_scale=1 put + 1 delete|flush_triggered=true during recovery bootstrap|sstable_count_after=1|manifest_size=2|actual=deleted key returns not found after reopen|pass=true
+--- PASS: TestTombstoneRecoveryHidesDeletedValue (0.04s)
+PASS
+ok  	raft-lsm-kv/internal/lsm	0.240s

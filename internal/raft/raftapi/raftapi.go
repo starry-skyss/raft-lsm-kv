@@ -13,6 +13,26 @@ type Raft interface {
 	// For Snaphots (3D)
 	Snapshot(index int, snapshot []byte)
 	PersistBytes() int
+
+	// DebugMetrics returns a read-only snapshot used by diagnostic tests.
+	DebugMetrics() RaftMetrics
+}
+
+// RaftMetrics is a lightweight, read-only diagnostics snapshot.
+type RaftMetrics struct {
+	NodeID                   int     `json:"node_id"`
+	IsLeader                 bool    `json:"is_leader"`
+	CurrentTerm              int     `json:"current_term"`
+	LeaderChangeTotal        uint64  `json:"leader_change_total"`
+	ElectionStartedTotal     uint64  `json:"election_started_total"`
+	TermChangeTotal          uint64  `json:"term_change_total"`
+	AppendEntriesFailedTotal uint64  `json:"append_entries_failed_total"`
+	RaftPersistCount         uint64  `json:"raft_persist_count"`
+	RaftPersistTotalMS       float64 `json:"raft_persist_total_ms"`
+	RaftPersistMaxMS         float64 `json:"raft_persist_max_ms"`
+	CommitIndex              int     `json:"commit_index"`
+	LastApplied              int     `json:"last_applied"`
+	LogLength                int     `json:"log_length"`
 }
 
 // As each Raft peer becomes aware that successive log entries are

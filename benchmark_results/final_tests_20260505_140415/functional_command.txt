@@ -1,0 +1,6 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+api_url: http://localhost:8080
+result_dir: benchmark_results/final_tests_20260505_140415
+cleaned_data_dir: /home/star/projects/kvstore/raft-lsm-kv/data
+server_command: GOCACHE=/tmp/go-build go run ./cmd/kvnode
+test_command: ./scripts/run_functional_tests.sh

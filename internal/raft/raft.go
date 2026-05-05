@@ -48,6 +48,14 @@ type Raft struct {
 	matchIndex []int
 	applyCh    chan raftapi.ApplyMsg
 
+	leaderChangeTotal        uint64
+	electionStartedTotal     uint64
+	termChangeTotal          uint64
+	appendEntriesFailedTotal uint64
+	raftPersistCount         uint64
+	raftPersistTotalNs       int64
+	raftPersistMaxNs         int64
+
 	// Your data here (3A, 3B, 3C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
@@ -91,6 +99,14 @@ func (rf *Raft) GetState() (int, bool) {
 	return rf.currentTerm, rf.state == StateLeader
 }
 
+func (rf *Raft) setTermLocked(term int) {
+	if term == rf.currentTerm {
+		return
+	}
+	rf.currentTerm = term
+	rf.termChangeTotal++
+}
+
 // save Raft's persistent state to stable storage,
 // where it can later be retrieved after a crash and restart.
 // see paper's Figure 2 for a description of what should be persistent.
@@ -99,6 +115,7 @@ func (rf *Raft) GetState() (int, bool) {
 // after you've implemented snapshots, pass the current snapshot
 // (or nil if there's not yet a snapshot).
 func (rf *Raft) persist() {
+	start := time.Now()
 	// Your code here (3C).
 	// Example:
 	// w := new(bytes.Buffer)
@@ -113,6 +130,13 @@ func (rf *Raft) persist() {
 	encoder.Encode(rf.votedFor)
 	encoder.Encode(rf.log)
 	rf.persister.Save(w.Bytes(), nil)
+
+	elapsed := time.Since(start).Nanoseconds()
+	rf.raftPersistCount++
+	rf.raftPersistTotalNs += elapsed
+	if elapsed > rf.raftPersistMaxNs {
+		rf.raftPersistMaxNs = elapsed
+	}
 }
 
 // restore previously persisted state.
@@ -157,6 +181,27 @@ func (rf *Raft) PersistBytes() int {
 	return rf.persister.RaftStateSize()
 }
 
+func (rf *Raft) DebugMetrics() raftapi.RaftMetrics {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	return raftapi.RaftMetrics{
+		NodeID:                   rf.me,
+		IsLeader:                 rf.state == StateLeader,
+		CurrentTerm:              rf.currentTerm,
+		LeaderChangeTotal:        rf.leaderChangeTotal,
+		ElectionStartedTotal:     rf.electionStartedTotal,
+		TermChangeTotal:          rf.termChangeTotal,
+		AppendEntriesFailedTotal: rf.appendEntriesFailedTotal,
+		RaftPersistCount:         rf.raftPersistCount,
+		RaftPersistTotalMS:       float64(rf.raftPersistTotalNs) / float64(time.Millisecond),
+		RaftPersistMaxMS:         float64(rf.raftPersistMaxNs) / float64(time.Millisecond),
+		CommitIndex:              rf.commitIndex,
+		LastApplied:              rf.lastApplied,
+		LogLength:                len(rf.log),
+	}
+}
+
 // the service says it has created a snapshot that has
 // all info up to and including index. this means the
 // service no longer needs the log through (and including)
@@ -196,7 +241,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		return
 	}
 	if args.Term > rf.currentTerm {
-		rf.currentTerm = args.Term
+		rf.setTermLocked(args.Term)
 		rf.state = StateFollower
 		rf.votedFor = -1
 		rf.persist()
@@ -381,6 +426,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
 // tricker已加锁
 func (rf *Raft) startElection() {
 	rf.currentTerm++
+	rf.termChangeTotal++
+	rf.electionStartedTotal++
 	rf.state = StateCandidate
 	rf.votedFor = rf.me
 	rf.resetElectionTimeout()
@@ -406,7 +453,7 @@ func (rf *Raft) startElection() {
 					return
 				}
 				if reply.Term > rf.currentTerm {
-					rf.currentTerm = reply.Term
+					rf.setTermLocked(reply.Term)
 					rf.state = StateFollower
 					rf.votedFor = -1
 					rf.persist()
@@ -417,6 +464,7 @@ func (rf *Raft) startElection() {
 					if votecount > len(rf.peers)/2 {
 						if rf.state == StateCandidate {
 							rf.state = StateLeader
+							rf.leaderChangeTotal++
 							for i := range rf.peers {
 								rf.nextIndex[i] = len(rf.log)
 							}
@@ -438,6 +486,9 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	needPersist := false
 
 	defer func() {
+		if !reply.Success {
+			rf.appendEntriesFailedTotal++
+		}
 		if needPersist {
 			rf.persist()
 		}
@@ -447,7 +498,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		return
 	}
 	if args.Term > rf.currentTerm {
-		rf.currentTerm = args.Term
+		rf.setTermLocked(args.Term)
 		reply.Term = rf.currentTerm
 		rf.votedFor = -1
 		needPersist = true
@@ -543,7 +594,7 @@ func (rf *Raft) broadcastHeartbeats() {
 					// 如果发现有人的任期比自己大（比如遇到了刚苏醒的新 Leader）
 					// 自己必须立刻退位变成 Follower
 					if reply.Term > rf.currentTerm {
-						rf.currentTerm = reply.Term
+						rf.setTermLocked(reply.Term)
 						rf.state = StateFollower
 						rf.resetElectionTimeout()
 						rf.votedFor = -1
@@ -607,6 +658,9 @@ func (rf *Raft) broadcastHeartbeats() {
 					}
 
 				} else {
+					rf.mu.Lock()
+					rf.appendEntriesFailedTotal++
+					rf.mu.Unlock()
 					return
 				}
 			}

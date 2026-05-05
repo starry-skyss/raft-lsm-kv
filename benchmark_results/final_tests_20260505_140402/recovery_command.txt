@@ -1,0 +1,3 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+result_dir: benchmark_results/final_tests_20260505_140402
+test_command: GOCACHE=/tmp/go-build go test -v ./internal/lsm -run 'Test(WALRecoveryPreservesUnflushedWrites|SSTableManifestRecoveryLoadsFlushedData|TombstoneRecoveryHidesDeletedValue)' -count=1
