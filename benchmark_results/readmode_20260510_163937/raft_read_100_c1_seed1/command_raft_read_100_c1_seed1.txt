@@ -1,0 +1,6 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+case_name: raft_read_100_c1_seed1
+result_dir: benchmark_results/readmode_20260510_163937/raft_read_100_c1_seed1
+cleaned_data_dir: /home/star/projects/kvstore/raft-lsm-kv/data
+server_command: GOCACHE=/tmp/go-build go run ./cmd/kvnode
+benchmark_command: GOCACHE=/tmp/go-build go run ./tests/benchmark/main.go -runid raft_read_100_c1_seed1 -workload read_100 -readmode raft -c 1 -n 20 -w 0.0 -keyspace 20 -valuesize 32 -seed 1 -prefill=true -prefilln 20 -warmup 0 -timeout 10s -u http://localhost:8080 -out benchmark_results/readmode_20260510_163937/raft_read_100_c1_seed1/result_raft_read_100_c1_seed1.json

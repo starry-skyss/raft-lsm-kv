@@ -1,0 +1,7 @@
+{
+  "current_leader": 2,
+  "current_term": 1,
+  "leader_change_total": 1,
+  "election_started_total": 1,
+  "term_change_total": 3
+}

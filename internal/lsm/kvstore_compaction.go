@@ -391,6 +391,9 @@ func (db *DB) applyManifestOrder(loadedMetas []*SSTableMeta) ([]*SSTableMeta, er
 
 // StartCompactionLoop 启动一个后台 goroutine，定期检查是否需要合并 SSTable 文件，并执行合并
 func (db *DB) StartCompactionLoop() {
+	if !db.enableCompaction {
+		return
+	}
 	if db.compactionInterval <= 0 {
 		db.compactionInterval = 10 * time.Second
 	}
@@ -411,6 +414,9 @@ func (db *DB) StartCompactionLoop() {
 }
 
 func (db *DB) needCompaction() bool {
+	if !db.enableCompaction {
+		return false
+	}
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
@@ -482,11 +488,17 @@ func (db *DB) removeObsoleteFiles(oldSSTs []*SSTableMeta) {
 }
 
 // doCompaction 预留给 Week 4 的后台合并流程。
-func (db *DB) doCompaction() error {
+func (db *DB) doCompaction() (err error) {
+	start := time.Now()
 	oldSSTs := db.pickCompactionFiles()
 	if len(oldSSTs) == 0 {
 		return nil
 	}
+	inputFiles := len(oldSSTs)
+	outputFiles := 0
+	defer func() {
+		db.recordCompaction(inputFiles, outputFiles, time.Since(start), err != nil)
+	}()
 
 	// TODO(week4):
 	// 1. 基于 oldSSTs 构造 SSTable 迭代器
@@ -535,6 +547,7 @@ func (db *DB) doCompaction() error {
 		Size:   size,
 		Index:  index,
 	}
+	outputFiles = 1
 
 	// 5. 元数据视图原子替换并持久化 Manifest
 	db.installCompactedTable(newMeta, oldSSTs)

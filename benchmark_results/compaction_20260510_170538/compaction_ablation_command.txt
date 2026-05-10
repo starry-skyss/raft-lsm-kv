@@ -1,0 +1,16 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+suite_id: compaction_20260510_170538
+suite_root: benchmark_results/compaction_20260510_170538
+api_url: http://localhost:8080
+compaction_modes: true false
+workloads: write_100 mixed_50_50 delete_mixed
+concurrencies: 10 30
+seeds: 1 2 3
+total_requests: 30000
+keyspace: 1000
+prefilln: 1000
+valuesize: 128
+warmup: 0
+timeout: 10s
+read_mode: raft
+cleaned_data_dir_per_case: /home/star/projects/kvstore/raft-lsm-kv/data

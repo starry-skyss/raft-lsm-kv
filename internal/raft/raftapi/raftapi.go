@@ -16,6 +16,10 @@ type Raft interface {
 
 	// DebugMetrics returns a read-only snapshot used by diagnostic tests.
 	DebugMetrics() RaftMetrics
+
+	// DebugForceElection forces this peer to start a new election. It is only
+	// used by diagnostic experiments.
+	DebugForceElection()
 }
 
 // RaftMetrics is a lightweight, read-only diagnostics snapshot.

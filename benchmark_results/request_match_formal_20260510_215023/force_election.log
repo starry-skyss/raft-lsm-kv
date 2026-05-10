@@ -1,0 +1,10 @@
+attempt=1 status=200 body={"debug_only_experiment":true,"leader_before":1,"status":"election_started","target_node":0,"term_before":1}
+attempt=2 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":2}
+attempt=3 status=200 body={"debug_only_experiment":true,"leader_before":1,"status":"election_started","target_node":0,"term_before":3}
+attempt=4 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":4}
+attempt=5 status=200 body={"debug_only_experiment":true,"leader_before":1,"status":"election_started","target_node":0,"term_before":5}
+attempt=6 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":6}
+attempt=7 status=200 body={"debug_only_experiment":true,"leader_before":1,"status":"election_started","target_node":0,"term_before":7}
+attempt=8 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":8}
+attempt=9 status=200 body={"debug_only_experiment":true,"leader_before":1,"status":"election_started","target_node":0,"term_before":9}
+attempt=10 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":10}

@@ -1,0 +1,3 @@
+read_mode	workload	concurrency	seed	write_ratio	prefill	n	keyspace	prefilln	valuesize	timeout	case_dir
+raft	read_100	1	1	0.0	true	20	20	20	32	10s	benchmark_results/readmode_20260510_163937/raft_read_100_c1_seed1
+local	read_100	1	1	0.0	true	20	20	20	32	10s	benchmark_results/readmode_20260510_163937/local_read_100_c1_seed1

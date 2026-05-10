@@ -1,0 +1,85 @@
+Benchmark starting
+Run ID: compaction_off_write_100_c10_seed3
+Workload: write_100
+Read mode: raft
+Target URL: http://localhost:8080
+Concurrency: 10, Requests: 30000, Write ratio: 1.0000, Delete ratio: 0.0000
+Enable compaction: false
+Keyspace: 1000, Value size: 128 bytes, Seed: 3, Timeout: 10s
+Data preparation reminder:
+- For write-only tests, clear the server data directory before starting the server if you need a clean baseline.
+
+================ Benchmark Results ================
+run_id:           compaction_off_write_100_c10_seed3
+workload_name:    write_100
+read_mode:        raft
+concurrency:      10
+write_ratio:      1.0000
+delete_ratio:     0.0000
+enable_compaction:false
+keyspace:         1000
+valuesize:        128
+seed:             3
+prefill:          false
+total_requests:   30000
+success_requests: 27289
+failed_requests:  2711
+success_rate:     90.96%
+total_duration:   8m5.505412628s
+total_qps:        61.79
+success_qps:      56.21
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      161.146967ms
+p50_latency:      149.901929ms
+p90_latency:      252.904059ms
+p99_latency:      470.397283ms
+p999_latency:     687.482576ms
+max_latency:      5.529291564s
+---------------------------------------------------
+PUT
+put_total:        30000
+put_success:      27289
+put_failed:       2711
+put_avg_latency:  161.146967ms
+put_p50:          149.901929ms
+put_p90:          252.904059ms
+put_p99:          470.397283ms
+put_p999:         687.482576ms
+put_max:          5.529291564s
+---------------------------------------------------
+GET
+get_total:        0
+get_success:      0
+get_failed:       0
+get_found:        0
+get_not_found:    0
+get_avg_latency:  0s
+get_p50:          0s
+get_p90:          0s
+get_p99:          0s
+get_p999:         0s
+get_max:          0s
+get_success_qps:  0.00
+---------------------------------------------------
+DELETE
+delete_total:        0
+delete_success:      0
+delete_failed:       0
+delete_avg_latency:  0s
+delete_p50:          0s
+delete_p90:          0s
+delete_p99:          0s
+delete_p999:         0s
+delete_max:          0s
+---------------------------------------------------
+Errors
+connection_refused: 0
+http_500: 0
+http_503: 2705
+not_leader: 0
+other: 0
+request_timeout: 6
+timeout: 0
+===================================================
+JSON report written to benchmark_results/compaction_20260510_170538/compaction_off_write_100_c10_seed3/result_compaction_off_write_100_c10_seed3.json

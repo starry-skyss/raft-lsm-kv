@@ -1,0 +1,7 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+case_name: compaction_off_delete_mixed_c10_seed3
+result_dir: benchmark_results/compaction_20260510_170538/compaction_off_delete_mixed_c10_seed3
+enable_compaction: false
+cleaned_data_dir: /home/star/projects/kvstore/raft-lsm-kv/data
+server_command: ENABLE_COMPACTION=false GOCACHE=/tmp/go-build go run ./cmd/kvnode
+benchmark_command: GOCACHE=/tmp/go-build go run ./tests/benchmark/main.go -runid compaction_off_delete_mixed_c10_seed3 -workload delete_mixed -readmode raft -enablecompaction=false -c 10 -n 30000 -w 0.4 -deleteratio 0.2 -keyspace 1000 -valuesize 128 -seed 3 -prefill=true -prefilln 1000 -warmup 0 -timeout 10s -u http://localhost:8080 -out benchmark_results/compaction_20260510_170538/compaction_off_delete_mixed_c10_seed3/result_compaction_off_delete_mixed_c10_seed3.json

@@ -1,0 +1,20 @@
+LSM compaction enabled: true
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put
+[Error] 17:44:12 | 503 | POST | /put

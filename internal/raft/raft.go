@@ -202,6 +202,13 @@ func (rf *Raft) DebugMetrics() raftapi.RaftMetrics {
 	}
 }
 
+func (rf *Raft) DebugForceElection() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	rf.startElection()
+	rf.resetElectionTimeout()
+}
+
 // the service says it has created a snapshot that has
 // all info up to and including index. this means the
 // service no longer needs the log through (and including)

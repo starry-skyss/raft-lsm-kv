@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+type Options struct {
+	EnableCompaction bool
+}
+
 type DB struct {
 	mu                  sync.RWMutex
 	memTable            *MemTable      // 接收写入
@@ -27,9 +31,15 @@ type DB struct {
 	manifestPath        string         //Manifest文件路径
 	compactionThreshold int            //触发 compaction 的 SSTable 数量阈值
 	compactionInterval  time.Duration  //定时 compaction 的时间间隔
+	enableCompaction    bool           // 是否启动后台 compaction，用于消融实验
+	metrics             dbMetrics
 }
 
 func NewDB(rootDir string) *DB {
+	return NewDBWithOptions(rootDir, Options{EnableCompaction: true})
+}
+
+func NewDBWithOptions(rootDir string, options Options) *DB {
 	dataDir := filepath.Join(rootDir, "data")
 	sstDir := filepath.Join(dataDir, "sst")
 	walDir := filepath.Join(dataDir, "wal")
@@ -57,6 +67,7 @@ func NewDB(rootDir string) *DB {
 		manifestPath:        manifestPath,
 		compactionThreshold: 4,
 		compactionInterval:  10 * time.Second,
+		enableCompaction:    options.EnableCompaction,
 	}
 	// 启动时加载现有的 SSTable 文件，并从 WAL 恢复数据
 	if err := kv.loadSSTables(); err != nil {
@@ -87,8 +98,10 @@ func NewDB(rootDir string) *DB {
 	kv.wal = activeWal
 	kv.walFileID++ // 当前的被占用了，全局 ID 往后挪一位给老黄牛用
 
-	// 启动后台 compaction 触发器（架构骨架）
-	kv.StartCompactionLoop()
+	if kv.enableCompaction {
+		// 启动后台 compaction 触发器（架构骨架）
+		kv.StartCompactionLoop()
+	}
 
 	// 启动 WAL 预分配器
 	go kv.walPreAllocator()
@@ -131,6 +144,11 @@ func (db *DB) Put(key, val string) error {
 }
 
 func (db *DB) Get(key string) (string, bool) {
+	touchedSSTables := 0
+	defer func() {
+		db.recordGetSSTableTouches(touchedSSTables)
+	}()
+
 	db.mu.RLock()
 	kBytes := []byte(key)
 
@@ -179,6 +197,7 @@ func (db *DB) Get(key string) (string, bool) {
 			continue
 		}
 
+		touchedSSTables++
 		val, found := readValFromSSTable(meta, db.sstDir, kBytes)
 		if found {
 			if val == nil {

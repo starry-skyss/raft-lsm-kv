@@ -1,0 +1,4 @@
+attempt=1 status=200 body={"debug_only_experiment":true,"leader_before":2,"status":"election_started","target_node":0,"term_before":1}
+attempt=2 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":2}
+attempt=3 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":4}
+attempt=4 status=200 body={"debug_only_experiment":true,"leader_before":0,"status":"election_started","target_node":1,"term_before":7}

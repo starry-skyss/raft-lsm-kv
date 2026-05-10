@@ -1,0 +1,13 @@
+scenario,run_id,write_key_count,overwrite_key_count,delete_key_count,verify_key_count,verify_success_count,recovery_ms,wal_file_count_before,sstable_file_count_before,sstable_file_count_after,manifest_loaded,pass
+"wal",1,1000,0,0,1000,1000,17.126,2,0,1,true,true
+"wal",2,1000,0,0,1000,1000,26.692,2,0,1,true,true
+"wal",3,1000,0,0,1000,1000,20.053,2,0,1,true,true
+"sstable_manifest",1,1000,0,0,1000,1000,20.958,2,17,18,true,true
+"sstable_manifest",2,1000,0,0,1000,1000,18.562,2,17,18,true,true
+"sstable_manifest",3,1000,0,0,1000,1000,18.943,2,17,18,true,true
+"tombstone",1,1000,0,1000,1000,1000,19.802,2,1,2,true,true
+"tombstone",2,1000,0,1000,1000,1000,18.255,2,1,2,true,true
+"tombstone",3,1000,0,1000,1000,1000,18.328,2,1,2,true,true
+"mixed",1,1000,500,250,1000,1000,16.667,2,4,5,true,true
+"mixed",2,1000,500,250,1000,1000,20.156,2,4,5,true,true
+"mixed",3,1000,500,250,1000,1000,18.407,2,4,5,true,true

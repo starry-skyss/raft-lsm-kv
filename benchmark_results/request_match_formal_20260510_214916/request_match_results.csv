@@ -1,0 +1,2 @@
+run_id,total_requests,success_requests,not_leader_total,request_timeout_total,leadership_changed_before_commit_total,http_500_total,http_503_total,error_result_total,other_error_total,leader_change_delta,election_started_delta,term_change_delta,force_election_attempts,duration_seconds
+request_match_formal_20260510_214916,10000,1371,0,0,0,0,8629,0,0,4,7,21,4,2.587

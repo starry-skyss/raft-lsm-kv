@@ -1,0 +1,29 @@
+# Compaction Ablation Summary
+
+- Case: compaction_on_delete_mixed_c10_seed2
+
+| Metric | Value |
+| --- | --- |
+| Enable compaction | true |
+| Workload | delete_mixed |
+| Concurrency | 10 |
+| Seed | 2 |
+| Total requests | 30000 |
+| Keyspace | 1000 |
+| Value size | 128 |
+| Success rate | 97.13% |
+| Success QPS | 68.90 |
+| Get success QPS | 27.43 |
+| Get P99 latency ms | 394.282 |
+| Get P99.9 latency ms | 542.896 |
+| SSTable files total | 834 |
+| Data size bytes | 16933795 |
+| WAL files total | 6 |
+| WAL size bytes | 12312 |
+| Avg SSTable files touched per Get | 14.861 |
+| Compaction count delta | 132 |
+| Compaction input files delta | 528 |
+| Compaction output files delta | 132 |
+| Compaction total ms delta | 4423.378 |
+| Compaction max ms | 220.186 |
+| Compaction failed delta | 0 |

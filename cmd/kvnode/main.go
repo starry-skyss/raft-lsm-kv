@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-
 	"os"
+	"strconv"
 	"time"
 
-	//"raft-lsm-kv/internal/lsm"
 	"raft-lsm-kv/internal/api"
+	"raft-lsm-kv/internal/lsm"
 	"raft-lsm-kv/internal/raft"
 	"raft-lsm-kv/internal/raft/labgob"
 	"raft-lsm-kv/internal/raft/labrpc"
@@ -21,6 +21,8 @@ func main() {
 	defer net.Cleanup()
 
 	serverCount := 3
+	enableCompaction := enableCompactionFromEnv()
+	fmt.Printf("LSM compaction enabled: %t\n", enableCompaction)
 	kvStores := make([]*store.KVStore, serverCount)
 	// 1. 提前创建好 3 个空的 RPC Server，并挂载到网络上
 	servers := make([]*labrpc.Server, serverCount)
@@ -57,7 +59,7 @@ func main() {
 		svc := labrpc.MakeService(rf)
 		servers[i].AddService(svc)
 
-		kvStores[i] = store.NewKVStore(nodeDir, rf, applyCh)
+		kvStores[i] = store.NewKVStoreWithLSMOptions(nodeDir, rf, applyCh, lsm.Options{EnableCompaction: enableCompaction})
 	}
 
 	fmt.Println("Cluster starting, waiting for leader election...")
@@ -66,4 +68,17 @@ func main() {
 
 	// 【修改点】：直接调用 API 层的启动函数，整个世界的运转交给了这一行！
 	api.StartGateway(kvStores, ":8080")
+}
+
+func enableCompactionFromEnv() bool {
+	raw := os.Getenv("ENABLE_COMPACTION")
+	if raw == "" {
+		return true
+	}
+	enabled, err := strconv.ParseBool(raw)
+	if err != nil {
+		fmt.Printf("WARN: invalid ENABLE_COMPACTION=%q, defaulting to true\n", raw)
+		return true
+	}
+	return enabled
 }

@@ -20,10 +20,13 @@ import (
 )
 
 const (
-	opPut = "put"
-	opGet = "get"
+	opPut    = "put"
+	opGet    = "get"
+	opDelete = "delete"
 
 	defaultRunIDTimeFormat = "20060102_150405"
+	readModeRaft           = "raft"
+	readModeLocal          = "local"
 )
 
 var knownErrorTypes = []string{
@@ -42,17 +45,19 @@ var knownErrorTypes = []string{
 
 type KVClient struct {
 	baseURL    string
+	readMode   string
 	httpClient *http.Client
 }
 
-func NewKVClient(baseURL string, timeout time.Duration) *KVClient {
+func NewKVClient(baseURL, readMode string, timeout time.Duration) *KVClient {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConns = 200
 	t.MaxConnsPerHost = 200
 	t.MaxIdleConnsPerHost = 200
 
 	return &KVClient{
-		baseURL: strings.TrimRight(baseURL, "/"),
+		baseURL:  strings.TrimRight(baseURL, "/"),
+		readMode: readMode,
 		httpClient: &http.Client{
 			Timeout:   timeout,
 			Transport: t,
@@ -87,7 +92,27 @@ func (c *KVClient) Put(key, value string) (int, string, error) {
 }
 
 func (c *KVClient) Get(key string) (int, string, error) {
-	resp, err := c.httpClient.Get(c.baseURL + "/get/" + url.PathEscape(key))
+	endpoint := c.baseURL + "/get/" + url.PathEscape(key)
+	if c.readMode != "" {
+		endpoint += "?readMode=" + url.QueryEscape(c.readMode)
+	}
+	resp, err := c.httpClient.Get(endpoint)
+	if err != nil {
+		return 0, "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(body), nil
+}
+
+func (c *KVClient) Delete(key string) (int, string, error) {
+	req, err := http.NewRequest(http.MethodDelete, c.baseURL+"/delete/"+url.PathEscape(key), nil)
+	if err != nil {
+		return 0, "", err
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return 0, "", err
 	}
@@ -118,19 +143,22 @@ type RequestResult struct {
 }
 
 type BenchmarkConfig struct {
-	RunID         string  `json:"run_id"`
-	WorkloadName  string  `json:"workload_name"`
-	Concurrency   int     `json:"concurrency"`
-	TotalRequests int     `json:"total_requests"`
-	WriteRatio    float64 `json:"write_ratio"`
-	TargetURL     string  `json:"target_url"`
-	Keyspace      int     `json:"keyspace"`
-	ValueSize     int     `json:"value_size"`
-	Seed          int64   `json:"seed"`
-	Prefill       bool    `json:"prefill"`
-	PrefillN      int     `json:"prefilln"`
-	Warmup        int     `json:"warmup"`
-	Timeout       string  `json:"timeout"`
+	RunID            string  `json:"run_id"`
+	WorkloadName     string  `json:"workload_name"`
+	ReadMode         string  `json:"read_mode"`
+	Concurrency      int     `json:"concurrency"`
+	TotalRequests    int     `json:"total_requests"`
+	WriteRatio       float64 `json:"write_ratio"`
+	DeleteRatio      float64 `json:"delete_ratio"`
+	EnableCompaction bool    `json:"enable_compaction"`
+	TargetURL        string  `json:"target_url"`
+	Keyspace         int     `json:"keyspace"`
+	ValueSize        int     `json:"value_size"`
+	Seed             int64   `json:"seed"`
+	Prefill          bool    `json:"prefill"`
+	PrefillN         int     `json:"prefilln"`
+	Warmup           int     `json:"warmup"`
+	Timeout          string  `json:"timeout"`
 }
 
 type StageSummary struct {
@@ -148,14 +176,17 @@ type BenchmarkReport struct {
 	PrefillStage StageSummary    `json:"prefill_stage"`
 	WarmupStage  StageSummary    `json:"warmup_stage"`
 
-	RunID        string  `json:"run_id"`
-	WorkloadName string  `json:"workload_name"`
-	Concurrency  int     `json:"concurrency"`
-	WriteRatio   float64 `json:"write_ratio"`
-	Keyspace     int     `json:"keyspace"`
-	ValueSize    int     `json:"valuesize"`
-	Seed         int64   `json:"seed"`
-	Prefill      bool    `json:"prefill"`
+	RunID            string  `json:"run_id"`
+	WorkloadName     string  `json:"workload_name"`
+	ReadMode         string  `json:"read_mode"`
+	Concurrency      int     `json:"concurrency"`
+	WriteRatio       float64 `json:"write_ratio"`
+	DeleteRatio      float64 `json:"delete_ratio"`
+	EnableCompaction bool    `json:"enable_compaction"`
+	Keyspace         int     `json:"keyspace"`
+	ValueSize        int     `json:"valuesize"`
+	Seed             int64   `json:"seed"`
+	Prefill          bool    `json:"prefill"`
 
 	TotalRequests   int     `json:"total_requests"`
 	SuccessRequests int     `json:"success_requests"`
@@ -200,6 +231,23 @@ type BenchmarkReport struct {
 	GetP999Ms       float64 `json:"get_p999_ms"`
 	GetMax          string  `json:"get_max"`
 	GetMaxMs        float64 `json:"get_max_ms"`
+	GetSuccessQPS   float64 `json:"get_success_qps"`
+
+	DeleteTotal        int     `json:"delete_total"`
+	DeleteSuccess      int     `json:"delete_success"`
+	DeleteFailed       int     `json:"delete_failed"`
+	DeleteAvgLatency   string  `json:"delete_avg_latency"`
+	DeleteAvgLatencyMs float64 `json:"delete_avg_latency_ms"`
+	DeleteP50          string  `json:"delete_p50"`
+	DeleteP50Ms        float64 `json:"delete_p50_ms"`
+	DeleteP90          string  `json:"delete_p90"`
+	DeleteP90Ms        float64 `json:"delete_p90_ms"`
+	DeleteP99          string  `json:"delete_p99"`
+	DeleteP99Ms        float64 `json:"delete_p99_ms"`
+	DeleteP999         string  `json:"delete_p999"`
+	DeleteP999Ms       float64 `json:"delete_p999_ms"`
+	DeleteMax          string  `json:"delete_max"`
+	DeleteMaxMs        float64 `json:"delete_max_ms"`
 
 	AvgLatency    string  `json:"avg_latency"`
 	AvgLatencyMs  float64 `json:"avg_latency_ms"`
@@ -236,7 +284,10 @@ func main() {
 	concurrency := flag.Int("c", 50, "并发客户端数量")
 	totalReqs := flag.Int("n", 10000, "总请求数量")
 	writeRatio := flag.Float64("w", 0.5, "写请求比例，范围 0.0 到 1.0")
+	deleteRatio := flag.Float64("deleteratio", 0.0, "删除请求比例，范围 0.0 到 1.0，读比例为 1-write-delete")
 	targetURL := flag.String("u", "http://localhost:8080", "API Gateway 地址")
+	readMode := flag.String("readmode", readModeRaft, "读模式：raft 表示强一致读，local 表示 Leader 本地直接读")
+	enableCompaction := flag.Bool("enablecompaction", true, "记录本轮实验是否开启 LSM Compaction")
 
 	keyspace := flag.Int("keyspace", 10000, "key 空间大小")
 	valueSize := flag.Int("valuesize", 128, "value 字节大小")
@@ -251,7 +302,7 @@ func main() {
 	if *prefillN == 0 {
 		*prefillN = *keyspace
 	}
-	if err := validateConfig(*concurrency, *totalReqs, *writeRatio, *keyspace, *valueSize, *prefillN, *warmup, *timeout); err != nil {
+	if err := validateConfig(*concurrency, *totalReqs, *writeRatio, *deleteRatio, *readMode, *keyspace, *valueSize, *prefillN, *warmup, *timeout); err != nil {
 		fmt.Fprintf(os.Stderr, "invalid arguments: %v\n", err)
 		os.Exit(2)
 	}
@@ -260,26 +311,31 @@ func main() {
 	}
 
 	config := BenchmarkConfig{
-		RunID:         *runID,
-		WorkloadName:  *workloadName,
-		Concurrency:   *concurrency,
-		TotalRequests: *totalReqs,
-		WriteRatio:    *writeRatio,
-		TargetURL:     *targetURL,
-		Keyspace:      *keyspace,
-		ValueSize:     *valueSize,
-		Seed:          *seed,
-		Prefill:       *prefill,
-		PrefillN:      *prefillN,
-		Warmup:        *warmup,
-		Timeout:       timeout.String(),
+		RunID:            *runID,
+		WorkloadName:     *workloadName,
+		ReadMode:         *readMode,
+		Concurrency:      *concurrency,
+		TotalRequests:    *totalReqs,
+		WriteRatio:       *writeRatio,
+		DeleteRatio:      *deleteRatio,
+		EnableCompaction: *enableCompaction,
+		TargetURL:        *targetURL,
+		Keyspace:         *keyspace,
+		ValueSize:        *valueSize,
+		Seed:             *seed,
+		Prefill:          *prefill,
+		PrefillN:         *prefillN,
+		Warmup:           *warmup,
+		Timeout:          timeout.String(),
 	}
 
 	fmt.Println("Benchmark starting")
 	fmt.Printf("Run ID: %s\n", *runID)
 	fmt.Printf("Workload: %s\n", *workloadName)
+	fmt.Printf("Read mode: %s\n", *readMode)
 	fmt.Printf("Target URL: %s\n", *targetURL)
-	fmt.Printf("Concurrency: %d, Requests: %d, Write ratio: %.4f\n", *concurrency, *totalReqs, *writeRatio)
+	fmt.Printf("Concurrency: %d, Requests: %d, Write ratio: %.4f, Delete ratio: %.4f\n", *concurrency, *totalReqs, *writeRatio, *deleteRatio)
+	fmt.Printf("Enable compaction: %t\n", *enableCompaction)
 	fmt.Printf("Keyspace: %d, Value size: %d bytes, Seed: %d, Timeout: %s\n", *keyspace, *valueSize, *seed, timeout.String())
 	printDataPreparationReminder(*writeRatio, *prefill)
 	fmt.Println()
@@ -294,7 +350,7 @@ func main() {
 	}
 	if *prefill {
 		fmt.Printf("Prefilling %d keys...\n", *prefillN)
-		prefillSummary = runPrefill(*targetURL, *timeout, *prefillN, value)
+		prefillSummary = runPrefill(*targetURL, *readMode, *timeout, *prefillN, value)
 		fmt.Printf("Prefill completed: success=%d failed=%d duration=%s\n\n",
 			prefillSummary.Success, prefillSummary.Failed, prefillSummary.Duration)
 	}
@@ -308,15 +364,15 @@ func main() {
 	}
 	if *warmup > 0 {
 		fmt.Printf("Running warmup: %d requests...\n", *warmup)
-		warmupTasks := generateTasks(*warmup, *writeRatio, *keyspace, value, *seed+1)
-		warmupResults, warmupDuration := runTasks(warmupTasks, *concurrency, *targetURL, *timeout)
+		warmupTasks := generateTasks(*warmup, *writeRatio, *deleteRatio, *keyspace, value, *seed+1)
+		warmupResults, warmupDuration := runTasks(warmupTasks, *concurrency, *targetURL, *readMode, *timeout)
 		warmupSummary = summarizeStage(true, *warmup, warmupResults, warmupDuration)
 		fmt.Printf("Warmup completed: success=%d failed=%d duration=%s\n\n",
 			warmupSummary.Success, warmupSummary.Failed, warmupSummary.Duration)
 	}
 
-	tasks := generateTasks(*totalReqs, *writeRatio, *keyspace, value, *seed)
-	results, totalDuration := runTasks(tasks, *concurrency, *targetURL, *timeout)
+	tasks := generateTasks(*totalReqs, *writeRatio, *deleteRatio, *keyspace, value, *seed)
+	results, totalDuration := runTasks(tasks, *concurrency, *targetURL, *readMode, *timeout)
 	report := buildReport(config, prefillSummary, warmupSummary, results, totalDuration)
 
 	printReport(report)
@@ -334,7 +390,7 @@ func main() {
 // 4. Request Execution
 // ============================================================================
 
-func validateConfig(concurrency, totalReqs int, writeRatio float64, keyspace, valueSize, prefillN, warmup int, timeout time.Duration) error {
+func validateConfig(concurrency, totalReqs int, writeRatio, deleteRatio float64, readMode string, keyspace, valueSize, prefillN, warmup int, timeout time.Duration) error {
 	if concurrency <= 0 {
 		return errors.New("-c must be greater than 0")
 	}
@@ -343,6 +399,15 @@ func validateConfig(concurrency, totalReqs int, writeRatio float64, keyspace, va
 	}
 	if writeRatio < 0 || writeRatio > 1 {
 		return errors.New("-w must be between 0.0 and 1.0")
+	}
+	if deleteRatio < 0 || deleteRatio > 1 {
+		return errors.New("-deleteratio must be between 0.0 and 1.0")
+	}
+	if writeRatio+deleteRatio > 1.0 {
+		return errors.New("-w plus -deleteratio must be less than or equal to 1.0")
+	}
+	if readMode != readModeRaft && readMode != readModeLocal {
+		return errors.New("-readmode must be raft or local")
 	}
 	if keyspace <= 0 {
 		return errors.New("-keyspace must be greater than 0")
@@ -398,14 +463,17 @@ func makeFixedValue(size int) string {
 	return strings.Repeat("v", size)
 }
 
-func generateTasks(total int, writeRatio float64, keyspace int, value string, seed int64) []BenchmarkTask {
+func generateTasks(total int, writeRatio, deleteRatio float64, keyspace int, value string, seed int64) []BenchmarkTask {
 	rng := rand.New(rand.NewSource(seed))
 	tasks := make([]BenchmarkTask, 0, total)
 
 	for i := 0; i < total; i++ {
 		op := opGet
-		if rng.Float64() < writeRatio {
+		r := rng.Float64()
+		if r < writeRatio {
 			op = opPut
+		} else if r < writeRatio+deleteRatio {
+			op = opDelete
 		}
 		key := fmt.Sprintf("key_%d", rng.Intn(keyspace))
 		tasks = append(tasks, BenchmarkTask{
@@ -418,8 +486,8 @@ func generateTasks(total int, writeRatio float64, keyspace int, value string, se
 	return tasks
 }
 
-func runPrefill(targetURL string, timeout time.Duration, total int, value string) StageSummary {
-	client := NewKVClient(targetURL, timeout)
+func runPrefill(targetURL, readMode string, timeout time.Duration, total int, value string) StageSummary {
+	client := NewKVClient(targetURL, readMode, timeout)
 	results := make([]RequestResult, 0, total)
 	start := time.Now()
 
@@ -435,7 +503,7 @@ func runPrefill(targetURL string, timeout time.Duration, total int, value string
 	return summarizeStage(true, total, results, time.Since(start))
 }
 
-func runTasks(tasks []BenchmarkTask, concurrency int, targetURL string, timeout time.Duration) ([]RequestResult, time.Duration) {
+func runTasks(tasks []BenchmarkTask, concurrency int, targetURL, readMode string, timeout time.Duration) ([]RequestResult, time.Duration) {
 	if len(tasks) == 0 {
 		return nil, 0
 	}
@@ -455,7 +523,7 @@ func runTasks(tasks []BenchmarkTask, concurrency int, targetURL string, timeout 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			client := NewKVClient(targetURL, timeout)
+			client := NewKVClient(targetURL, readMode, timeout)
 			for task := range taskCh {
 				resultCh <- executeTask(client, task)
 			}
@@ -493,6 +561,8 @@ func executeTask(client *KVClient, task BenchmarkTask) RequestResult {
 		status, body, err = client.Put(task.Key, task.Value)
 	case opGet:
 		status, body, err = client.Get(task.Key)
+	case opDelete:
+		status, body, err = client.Delete(task.Key)
 	default:
 		err = fmt.Errorf("unknown operation: %s", task.Operation)
 	}
@@ -507,7 +577,7 @@ func executeTask(client *KVClient, task BenchmarkTask) RequestResult {
 	}
 
 	switch task.Operation {
-	case opPut:
+	case opPut, opDelete:
 		result.Success = status == http.StatusOK
 		if !result.Success {
 			result.ErrorType = classifyHTTPFailure(status, body)
@@ -621,23 +691,27 @@ func buildReport(config BenchmarkConfig, prefill StageSummary, warmup StageSumma
 	var allLatencies []time.Duration
 	var putLatencies []time.Duration
 	var getLatencies []time.Duration
+	var deleteLatencies []time.Duration
 
 	report := BenchmarkReport{
-		Config:          config,
-		PrefillStage:    prefill,
-		WarmupStage:     warmup,
-		RunID:           config.RunID,
-		WorkloadName:    config.WorkloadName,
-		Concurrency:     config.Concurrency,
-		WriteRatio:      config.WriteRatio,
-		Keyspace:        config.Keyspace,
-		ValueSize:       config.ValueSize,
-		Seed:            config.Seed,
-		Prefill:         config.Prefill,
-		TotalRequests:   len(results),
-		TotalDuration:   totalDuration.String(),
-		DurationSeconds: totalDuration.Seconds(),
-		ErrorCounts:     newErrorCounts(),
+		Config:           config,
+		PrefillStage:     prefill,
+		WarmupStage:      warmup,
+		RunID:            config.RunID,
+		WorkloadName:     config.WorkloadName,
+		ReadMode:         config.ReadMode,
+		Concurrency:      config.Concurrency,
+		WriteRatio:       config.WriteRatio,
+		DeleteRatio:      config.DeleteRatio,
+		EnableCompaction: config.EnableCompaction,
+		Keyspace:         config.Keyspace,
+		ValueSize:        config.ValueSize,
+		Seed:             config.Seed,
+		Prefill:          config.Prefill,
+		TotalRequests:    len(results),
+		TotalDuration:    totalDuration.String(),
+		DurationSeconds:  totalDuration.Seconds(),
+		ErrorCounts:      newErrorCounts(),
 	}
 
 	for _, result := range results {
@@ -674,6 +748,14 @@ func buildReport(config BenchmarkConfig, prefill StageSummary, warmup StageSumma
 			if result.NotFound {
 				report.GetNotFound++
 			}
+		case opDelete:
+			report.DeleteTotal++
+			deleteLatencies = append(deleteLatencies, result.Latency)
+			if result.Success {
+				report.DeleteSuccess++
+			} else {
+				report.DeleteFailed++
+			}
 		}
 	}
 
@@ -684,15 +766,18 @@ func buildReport(config BenchmarkConfig, prefill StageSummary, warmup StageSumma
 	if totalDuration > 0 {
 		report.TotalQPS = float64(report.TotalRequests) / totalDuration.Seconds()
 		report.SuccessQPS = float64(report.SuccessRequests) / totalDuration.Seconds()
+		report.GetSuccessQPS = float64(report.GetSuccess) / totalDuration.Seconds()
 	}
 
 	allStats := summarizeLatencies(allLatencies)
 	putStats := summarizeLatencies(putLatencies)
 	getStats := summarizeLatencies(getLatencies)
+	deleteStats := summarizeLatencies(deleteLatencies)
 
 	fillOverallLatencyFields(&report, allStats)
 	fillPutLatencyFields(&report, putStats)
 	fillGetLatencyFields(&report, getStats)
+	fillDeleteLatencyFields(&report, deleteStats)
 
 	return report
 }
@@ -770,6 +855,21 @@ func fillGetLatencyFields(report *BenchmarkReport, stats latencySummary) {
 	report.GetMaxMs = durationMs(stats.Max)
 }
 
+func fillDeleteLatencyFields(report *BenchmarkReport, stats latencySummary) {
+	report.DeleteAvgLatency = stats.Avg.String()
+	report.DeleteAvgLatencyMs = durationMs(stats.Avg)
+	report.DeleteP50 = stats.P50.String()
+	report.DeleteP50Ms = durationMs(stats.P50)
+	report.DeleteP90 = stats.P90.String()
+	report.DeleteP90Ms = durationMs(stats.P90)
+	report.DeleteP99 = stats.P99.String()
+	report.DeleteP99Ms = durationMs(stats.P99)
+	report.DeleteP999 = stats.P999.String()
+	report.DeleteP999Ms = durationMs(stats.P999)
+	report.DeleteMax = stats.Max.String()
+	report.DeleteMaxMs = durationMs(stats.Max)
+}
+
 func fillOverallLatencyFields(report *BenchmarkReport, stats latencySummary) {
 	report.AvgLatency = stats.Avg.String()
 	report.AvgLatencyMs = durationMs(stats.Avg)
@@ -789,8 +889,11 @@ func printReport(report BenchmarkReport) {
 	fmt.Println("================ Benchmark Results ================")
 	fmt.Printf("run_id:           %s\n", report.RunID)
 	fmt.Printf("workload_name:    %s\n", report.WorkloadName)
+	fmt.Printf("read_mode:        %s\n", report.ReadMode)
 	fmt.Printf("concurrency:      %d\n", report.Concurrency)
 	fmt.Printf("write_ratio:      %.4f\n", report.WriteRatio)
+	fmt.Printf("delete_ratio:     %.4f\n", report.DeleteRatio)
+	fmt.Printf("enable_compaction:%t\n", report.EnableCompaction)
 	fmt.Printf("keyspace:         %d\n", report.Keyspace)
 	fmt.Printf("valuesize:        %d\n", report.ValueSize)
 	fmt.Printf("seed:             %d\n", report.Seed)
@@ -837,6 +940,19 @@ func printReport(report BenchmarkReport) {
 	fmt.Printf("get_p99:          %s\n", report.GetP99)
 	fmt.Printf("get_p999:         %s\n", report.GetP999)
 	fmt.Printf("get_max:          %s\n", report.GetMax)
+	fmt.Printf("get_success_qps:  %.2f\n", report.GetSuccessQPS)
+
+	fmt.Println("---------------------------------------------------")
+	fmt.Println("DELETE")
+	fmt.Printf("delete_total:        %d\n", report.DeleteTotal)
+	fmt.Printf("delete_success:      %d\n", report.DeleteSuccess)
+	fmt.Printf("delete_failed:       %d\n", report.DeleteFailed)
+	fmt.Printf("delete_avg_latency:  %s\n", report.DeleteAvgLatency)
+	fmt.Printf("delete_p50:          %s\n", report.DeleteP50)
+	fmt.Printf("delete_p90:          %s\n", report.DeleteP90)
+	fmt.Printf("delete_p99:          %s\n", report.DeleteP99)
+	fmt.Printf("delete_p999:         %s\n", report.DeleteP999)
+	fmt.Printf("delete_max:          %s\n", report.DeleteMax)
 
 	fmt.Println("---------------------------------------------------")
 	fmt.Println("Errors")

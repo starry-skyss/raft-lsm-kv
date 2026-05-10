@@ -1,0 +1,88 @@
+Benchmark starting
+Run ID: compaction_on_mixed_50_50_c30_seed3
+Workload: mixed_50_50
+Read mode: raft
+Target URL: http://localhost:8080
+Concurrency: 30, Requests: 30000, Write ratio: 0.5000, Delete ratio: 0.0000
+Enable compaction: true
+Keyspace: 1000, Value size: 128 bytes, Seed: 3, Timeout: 10s
+Data preparation reminder:
+- Prefill is enabled. Keep the same initial data scale across repeated runs for comparable results.
+
+Prefilling 1000 keys...
+Prefill completed: success=1000 failed=0 duration=11.537226494s
+
+================ Benchmark Results ================
+run_id:           compaction_on_mixed_50_50_c30_seed3
+workload_name:    mixed_50_50
+read_mode:        raft
+concurrency:      30
+write_ratio:      0.5000
+delete_ratio:     0.0000
+enable_compaction:true
+keyspace:         1000
+valuesize:        128
+seed:             3
+prefill:          true
+total_requests:   30000
+success_requests: 19738
+failed_requests:  10262
+success_rate:     65.79%
+total_duration:   3m11.119725162s
+total_qps:        156.97
+success_qps:      103.28
+---------------------------------------------------
+Latency (all requests)
+avg_latency:      188.114104ms
+p50_latency:      192.230578ms
+p90_latency:      394.45182ms
+p99_latency:      731.794435ms
+p999_latency:     1.214342223s
+max_latency:      5.382127243s
+---------------------------------------------------
+PUT
+put_total:        14874
+put_success:      9812
+put_failed:       5062
+put_avg_latency:  193.444984ms
+put_p50:          200.44933ms
+put_p90:          400.598581ms
+put_p99:          748.716964ms
+put_p999:         1.213760923s
+put_max:          5.382127243s
+---------------------------------------------------
+GET
+get_total:        15126
+get_success:      9926
+get_failed:       5200
+get_found:        9926
+get_not_found:    0
+get_avg_latency:  182.872037ms
+get_p50:          184.764794ms
+get_p90:          387.597573ms
+get_p99:          712.178693ms
+get_p999:         1.214418538s
+get_max:          5.350947265s
+get_success_qps:  51.94
+---------------------------------------------------
+DELETE
+delete_total:        0
+delete_success:      0
+delete_failed:       0
+delete_avg_latency:  0s
+delete_p50:          0s
+delete_p90:          0s
+delete_p99:          0s
+delete_p999:         0s
+delete_max:          0s
+---------------------------------------------------
+Errors
+connection_refused: 0
+http_500: 0
+http_503: 10250
+not_leader: 0
+other: 0
+request_timeout: 12
+timeout: 0
+===================================================
+JSON report written to benchmark_results/compaction_20260510_170538/compaction_on_mixed_50_50_c30_seed3/result_compaction_on_mixed_50_50_c30_seed3.json

@@ -1,0 +1,15 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+run_id: request_match_formal_20260510_215023
+result_dir: benchmark_results/request_match_formal_20260510_215023
+api_url: http://localhost:8080
+total_requests: 10000
+concurrency: 50
+keyspace: 1000
+valuesize: 64
+timeout: 5s
+elections: 10
+election_interval: 100ms
+seed: 1
+cleaned_data_dir: /home/star/projects/kvstore/raft-lsm-kv/data
+server_command: GOCACHE=/tmp/go-build go run ./cmd/kvnode
+experiment_command: GOCACHE=/tmp/go-build go run ./tests/requestmatch -runid request_match_formal_20260510_215023 -u http://localhost:8080 -n 10000 -c 50 -keyspace 1000 -valuesize 64 -timeout 5s -elections 10 -election-interval 100ms -seed 1 -outdir benchmark_results/request_match_formal_20260510_215023

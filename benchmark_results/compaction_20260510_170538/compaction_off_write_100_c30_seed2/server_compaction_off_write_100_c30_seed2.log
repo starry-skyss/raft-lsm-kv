@@ -1,0 +1,33 @@
+LSM compaction enabled: false
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+[Error] 19:39:44 | 503 | POST | /put
+[Error] 19:39:44 | 503 | POST | /put
+[Error] 19:39:44 | 503 | POST | /put
+[Error] 19:39:44 | 503 | POST | /put
+[Error] 19:39:44 | 503 | POST | /put
+[Error] 19:40:01 | 503 | POST | /put
+[Error] 19:40:01 | 503 | POST | /put
+[Error] 19:40:01 | 503 | POST | /put
+[Error] 19:40:01 | 503 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:05 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put
+❌ [DEBUG] Put 失败，报错内容: request timeout
+[Error] 19:40:06 | 500 | POST | /put

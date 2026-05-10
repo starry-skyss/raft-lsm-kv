@@ -1,0 +1,20 @@
+{
+  "run_id": "request_match_formal_20260510_214916",
+  "total_requests": 10000,
+  "concurrency": 50,
+  "keyspace": 1000,
+  "value_size": 64,
+  "success_requests": 1371,
+  "not_leader_total": 0,
+  "request_timeout_total": 0,
+  "leadership_changed_before_commit_total": 0,
+  "http_500_total": 0,
+  "http_503_total": 8629,
+  "other_error_total": 0,
+  "error_result_total": 0,
+  "leader_change_delta": 4,
+  "election_started_delta": 7,
+  "term_change_delta": 21,
+  "duration_seconds": 2.587433178,
+  "force_election_attempts": 4
+}

@@ -1,0 +1,20 @@
+LSM compaction enabled: true
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080
+[Error] 18:25:12 | 503 | DELETE | /delete/key_646
+[Error] 18:25:12 | 503 | POST | /put
+[Error] 18:25:12 | 503 | POST | /put
+[Error] 18:25:12 | 503 | POST | /put
+❌ [DEBUG] DELETE 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | DELETE | /delete/key_609
+❌ [DEBUG] DELETE 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | DELETE | /delete/key_789
+❌ [DEBUG] Put 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | POST | /put
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | GET | /get/key_308
+❌ [DEBUG] Get 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | GET | /get/key_401
+❌ [DEBUG] DELETE 失败，报错内容: leadership changed before commit
+[Error] 18:25:12 | 500 | DELETE | /delete/key_165

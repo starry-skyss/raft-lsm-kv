@@ -5,14 +5,21 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"raft-lsm-kv/internal/lsm"
 	"raft-lsm-kv/internal/raft/raftapi"
 	"raft-lsm-kv/internal/store"
+)
+
+const (
+	readModeRaft  = "raft"
+	readModeLocal = "local"
 )
 
 type gatewayMetrics struct {
@@ -52,6 +59,7 @@ type nodeDebugMetrics struct {
 	NodeID          int                 `json:"node_id"`
 	ActiveWaitChans int                 `json:"active_wait_chans"`
 	Raft            raftapi.RaftMetrics `json:"raft"`
+	LSM             lsm.DebugMetrics    `json:"lsm"`
 }
 
 type debugMetricsResponse struct {
@@ -85,6 +93,7 @@ type debugMetricsResponse struct {
 	LastGCPauseNS                      uint64                  `json:"last_gc_pause_ns"`
 	StoreAPI                           storeAPIMetricsSnapshot `json:"store_api"`
 	Runtime                            runtimeMetricsSnapshot  `json:"runtime"`
+	LSM                                lsm.DebugMetrics        `json:"lsm"`
 	Nodes                              []nodeDebugMetrics      `json:"nodes"`
 }
 
@@ -154,17 +163,22 @@ func StartGateway(kvStores []*store.KVStore, port string) {
 		metrics.requestTotal.Add(1)
 		metrics.getTotal.Add(1)
 		key := c.Param("key")
+		readMode := c.DefaultQuery("readMode", readModeRaft)
+		if readMode != readModeRaft && readMode != readModeLocal {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid readMode, expected raft or local"})
+			return
+		}
 
 		// 轮询寻找 Leader
 		for i, kv := range kvStores {
-			val, exists, err := kv.Get(key) // 注意这里 Get 的签名需要修改，加上 error
+			val, exists, err := getByReadMode(kv, key, readMode)
 
 			if err == nil {
 				if !exists {
-					c.JSON(http.StatusNotFound, gin.H{"error": "key not found", "leader": i})
+					c.JSON(http.StatusNotFound, gin.H{"error": "key not found", "leader": i, "read_mode": readMode})
 					return
 				}
-				c.JSON(http.StatusOK, gin.H{"value": val, "leader": i})
+				c.JSON(http.StatusOK, gin.H{"value": val, "leader": i, "read_mode": readMode})
 				return
 			}
 
@@ -208,11 +222,58 @@ func StartGateway(kvStores []*store.KVStore, port string) {
 		c.JSON(http.StatusOK, buildDebugMetrics(kvStores, metrics))
 	})
 
+	r.POST("/debug/force-election", func(c *gin.Context) {
+		targetNode, err := chooseForceElectionTarget(c.Query("node"), kvStores)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		before := buildDebugMetrics(kvStores, metrics)
+		kvStores[targetNode].DebugForceElection()
+		c.JSON(http.StatusOK, gin.H{
+			"status":                "election_started",
+			"target_node":           targetNode,
+			"leader_before":         before.CurrentLeader,
+			"term_before":           before.CurrentTerm,
+			"debug_only_experiment": true,
+		})
+	})
+
 	// 启动 HTTP 服务
 	fmt.Printf("API Gateway running on http://localhost%s\n", port)
 	if err := r.Run(port); err != nil {
 		panic("Failed to start API Gateway: " + err.Error())
 	}
+}
+
+func chooseForceElectionTarget(rawNode string, kvStores []*store.KVStore) (int, error) {
+	if rawNode != "" {
+		node, err := strconv.Atoi(rawNode)
+		if err != nil {
+			return -1, fmt.Errorf("invalid node: %s", rawNode)
+		}
+		if node < 0 || node >= len(kvStores) {
+			return -1, fmt.Errorf("node out of range: %d", node)
+		}
+		return node, nil
+	}
+
+	for i, kv := range kvStores {
+		if !kv.RaftMetrics().IsLeader {
+			return i, nil
+		}
+	}
+	if len(kvStores) == 0 {
+		return -1, fmt.Errorf("no raft nodes available")
+	}
+	return 0, nil
+}
+
+func getByReadMode(kv *store.KVStore, key, readMode string) (string, bool, error) {
+	if readMode == readModeLocal {
+		return kv.GetLocalIfLeader(key)
+	}
+	return kv.Get(key)
 }
 
 func observeStoreError(metrics *gatewayMetrics, err error) {
@@ -245,18 +306,54 @@ func buildDebugMetrics(kvStores []*store.KVStore, metrics *gatewayMetrics) debug
 	var raftPersistCount uint64
 	var raftPersistTotalMS float64
 	var raftPersistMaxMS float64
+	var lsmGetTotal uint64
+	var lsmGetTouchedTotal uint64
+	var lsmGetTouchedMax uint64
+	var lsmCompactionTotal uint64
+	var lsmCompactionInputFilesTotal uint64
+	var lsmCompactionOutputFilesTotal uint64
+	var lsmCompactionTotalMS float64
+	var lsmCompactionMaxMS float64
+	var lsmCompactionLastMS float64
+	var lsmCompactionFailedTotal uint64
+	var lsmSSTableCount int
+	compactionEnabled := true
 
 	nodes := make([]nodeDebugMetrics, 0, len(kvStores))
 	for i, kv := range kvStores {
 		raftMetrics := kv.RaftMetrics()
+		lsmMetrics := kv.LSMMetrics()
 		waitChans := kv.ActiveWaitChans()
 		nodes = append(nodes, nodeDebugMetrics{
 			NodeID:          i,
 			ActiveWaitChans: waitChans,
 			Raft:            raftMetrics,
+			LSM:             lsmMetrics,
 		})
 
 		activeWaitChans += waitChans
+		if i == 0 {
+			compactionEnabled = lsmMetrics.CompactionEnabled
+		} else {
+			compactionEnabled = compactionEnabled && lsmMetrics.CompactionEnabled
+		}
+		lsmGetTotal += lsmMetrics.GetTotal
+		lsmGetTouchedTotal += lsmMetrics.GetSSTableFilesTouchedTotal
+		if lsmMetrics.GetSSTableFilesTouchedMax > lsmGetTouchedMax {
+			lsmGetTouchedMax = lsmMetrics.GetSSTableFilesTouchedMax
+		}
+		lsmCompactionTotal += lsmMetrics.CompactionTotal
+		lsmCompactionInputFilesTotal += lsmMetrics.CompactionInputFilesTotal
+		lsmCompactionOutputFilesTotal += lsmMetrics.CompactionOutputFilesTotal
+		lsmCompactionTotalMS += lsmMetrics.CompactionTotalMS
+		if lsmMetrics.CompactionMaxMS > lsmCompactionMaxMS {
+			lsmCompactionMaxMS = lsmMetrics.CompactionMaxMS
+		}
+		if lsmMetrics.CompactionLastMS > lsmCompactionLastMS {
+			lsmCompactionLastMS = lsmMetrics.CompactionLastMS
+		}
+		lsmCompactionFailedTotal += lsmMetrics.CompactionFailedTotal
+		lsmSSTableCount += lsmMetrics.SSTableCount
 		leaderChangeTotal += raftMetrics.LeaderChangeTotal
 		electionStartedTotal += raftMetrics.ElectionStartedTotal
 		termChangeTotal += raftMetrics.TermChangeTotal
@@ -282,6 +379,25 @@ func buildDebugMetrics(kvStores []*store.KVStore, metrics *gatewayMetrics) debug
 			currentLeader = i
 			currentTerm = raftMetrics.CurrentTerm
 		}
+	}
+	lsmGetTouchedAvg := 0.0
+	if lsmGetTotal > 0 {
+		lsmGetTouchedAvg = float64(lsmGetTouchedTotal) / float64(lsmGetTotal)
+	}
+	lsmAggregate := lsm.DebugMetrics{
+		CompactionEnabled:           compactionEnabled,
+		GetTotal:                    lsmGetTotal,
+		GetSSTableFilesTouchedTotal: lsmGetTouchedTotal,
+		GetSSTableFilesTouchedAvg:   lsmGetTouchedAvg,
+		GetSSTableFilesTouchedMax:   lsmGetTouchedMax,
+		CompactionTotal:             lsmCompactionTotal,
+		CompactionInputFilesTotal:   lsmCompactionInputFilesTotal,
+		CompactionOutputFilesTotal:  lsmCompactionOutputFilesTotal,
+		CompactionTotalMS:           lsmCompactionTotalMS,
+		CompactionMaxMS:             lsmCompactionMaxMS,
+		CompactionLastMS:            lsmCompactionLastMS,
+		CompactionFailedTotal:       lsmCompactionFailedTotal,
+		SSTableCount:                lsmSSTableCount,
 	}
 
 	storeAPI := storeAPIMetricsSnapshot{
@@ -329,6 +445,7 @@ func buildDebugMetrics(kvStores []*store.KVStore, metrics *gatewayMetrics) debug
 		LastGCPauseNS:                      runtimeMetrics.LastGCPauseNS,
 		StoreAPI:                           storeAPI,
 		Runtime:                            runtimeMetrics,
+		LSM:                                lsmAggregate,
 		Nodes:                              nodes,
 	}
 }

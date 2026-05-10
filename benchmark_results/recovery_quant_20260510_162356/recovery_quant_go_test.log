@@ -1,0 +1,64 @@
+=== RUN   TestQuantitativeRecoveryScenarios
+=== RUN   TestQuantitativeRecoveryScenarios/wal_run_1
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_12150748002/001/data/wal/000001wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_12150748002/001/data/wal/000002wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=wal|run_id=1|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=17.126|wal_file_count_before=2|sstable_file_count_before=0|sstable_file_count_after=1|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/wal_run_2
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_23908502512/001/data/wal/000001wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_23908502512/001/data/wal/000002wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=wal|run_id=2|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=26.692|wal_file_count_before=2|sstable_file_count_before=0|sstable_file_count_after=1|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/wal_run_3
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_31400599759/001/data/wal/000001wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenarioswal_run_31400599759/001/data/wal/000002wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=wal|run_id=3|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=20.053|wal_file_count_before=2|sstable_file_count_before=0|sstable_file_count_after=1|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/sstable_manifest_run_1
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_11146249874/001/data/wal/000018wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_11146249874/001/data/wal/000019wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=sstable_manifest|run_id=1|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=20.958|wal_file_count_before=2|sstable_file_count_before=17|sstable_file_count_after=18|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/sstable_manifest_run_2
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_22368088138/001/data/wal/000018wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_22368088138/001/data/wal/000019wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=sstable_manifest|run_id=2|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=18.562|wal_file_count_before=2|sstable_file_count_before=17|sstable_file_count_after=18|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/sstable_manifest_run_3
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_33583673705/001/data/wal/000018wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariossstable_manifest_run_33583673705/001/data/wal/000019wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=sstable_manifest|run_id=3|write_key_count=1000|overwrite_key_count=0|delete_key_count=0|verify_key_count=1000|verify_success_count=1000|recovery_ms=18.943|wal_file_count_before=2|sstable_file_count_before=17|sstable_file_count_after=18|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/tombstone_run_1
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_13787022396/001/data/wal/000002wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_13787022396/001/data/wal/000003wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=tombstone|run_id=1|write_key_count=1000|overwrite_key_count=0|delete_key_count=1000|verify_key_count=1000|verify_success_count=1000|recovery_ms=19.802|wal_file_count_before=2|sstable_file_count_before=1|sstable_file_count_after=2|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/tombstone_run_2
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_22466235596/001/data/wal/000002wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_22466235596/001/data/wal/000003wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=tombstone|run_id=2|write_key_count=1000|overwrite_key_count=0|delete_key_count=1000|verify_key_count=1000|verify_success_count=1000|recovery_ms=18.255|wal_file_count_before=2|sstable_file_count_before=1|sstable_file_count_after=2|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/tombstone_run_3
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_31007690390/001/data/wal/000002wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariostombstone_run_31007690390/001/data/wal/000003wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=tombstone|run_id=3|write_key_count=1000|overwrite_key_count=0|delete_key_count=1000|verify_key_count=1000|verify_success_count=1000|recovery_ms=18.328|wal_file_count_before=2|sstable_file_count_before=1|sstable_file_count_after=2|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/mixed_run_1
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_12395844599/001/data/wal/000005wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_12395844599/001/data/wal/000006wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=mixed|run_id=1|write_key_count=1000|overwrite_key_count=500|delete_key_count=250|verify_key_count=1000|verify_success_count=1000|recovery_ms=16.667|wal_file_count_before=2|sstable_file_count_before=4|sstable_file_count_after=5|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/mixed_run_2
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_21867514456/001/data/wal/000005wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_21867514456/001/data/wal/000006wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=mixed|run_id=2|write_key_count=1000|overwrite_key_count=500|delete_key_count=250|verify_key_count=1000|verify_success_count=1000|recovery_ms=20.156|wal_file_count_before=2|sstable_file_count_before=4|sstable_file_count_after=5|manifest_loaded=true|pass=true
+=== RUN   TestQuantitativeRecoveryScenarios/mixed_run_3
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_33431783955/001/data/wal/000005wal.log
+Removed old WAL file: /tmp/TestQuantitativeRecoveryScenariosmixed_run_33431783955/001/data/wal/000006wal.log
+    kvstore_recovery_quant_test.go:47: RECOVERY_QUANT|scenario=mixed|run_id=3|write_key_count=1000|overwrite_key_count=500|delete_key_count=250|verify_key_count=1000|verify_success_count=1000|recovery_ms=18.407|wal_file_count_before=2|sstable_file_count_before=4|sstable_file_count_after=5|manifest_loaded=true|pass=true
+--- PASS: TestQuantitativeRecoveryScenarios (81.56s)
+    --- PASS: TestQuantitativeRecoveryScenarios/wal_run_1 (4.71s)
+    --- PASS: TestQuantitativeRecoveryScenarios/wal_run_2 (4.58s)
+    --- PASS: TestQuantitativeRecoveryScenarios/wal_run_3 (4.55s)
+    --- PASS: TestQuantitativeRecoveryScenarios/sstable_manifest_run_1 (4.77s)
+    --- PASS: TestQuantitativeRecoveryScenarios/sstable_manifest_run_2 (5.01s)
+    --- PASS: TestQuantitativeRecoveryScenarios/sstable_manifest_run_3 (4.91s)
+    --- PASS: TestQuantitativeRecoveryScenarios/tombstone_run_1 (9.34s)
+    --- PASS: TestQuantitativeRecoveryScenarios/tombstone_run_2 (9.39s)
+    --- PASS: TestQuantitativeRecoveryScenarios/tombstone_run_3 (9.46s)
+    --- PASS: TestQuantitativeRecoveryScenarios/mixed_run_1 (8.24s)
+    --- PASS: TestQuantitativeRecoveryScenarios/mixed_run_2 (8.30s)
+    --- PASS: TestQuantitativeRecoveryScenarios/mixed_run_3 (8.31s)
+PASS
+ok  	raft-lsm-kv/internal/lsm	81.564s

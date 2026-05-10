@@ -37,8 +37,12 @@ type KVStore struct {
 }
 
 func NewKVStore(rootDir string, rf raftapi.Raft, applyCh chan raftapi.ApplyMsg) *KVStore {
+	return NewKVStoreWithLSMOptions(rootDir, rf, applyCh, lsm.Options{EnableCompaction: true})
+}
+
+func NewKVStoreWithLSMOptions(rootDir string, rf raftapi.Raft, applyCh chan raftapi.ApplyMsg, options lsm.Options) *KVStore {
 	kv := &KVStore{
-		db:        lsm.NewDB(rootDir),
+		db:        lsm.NewDBWithOptions(rootDir, options),
 		rf:        rf,
 		applyCh:   applyCh,
 		waitChans: make(map[int]chan OpResult),
@@ -176,6 +180,18 @@ func (kv *KVStore) Get(key string) (string, bool, error) {
 	}
 }
 
+// GetLocalIfLeader is an experimental read path used only for benchmark
+// comparison. It bypasses Raft for GET but still requires the local node to be
+// the current leader, so callers do not read from followers.
+func (kv *KVStore) GetLocalIfLeader(key string) (string, bool, error) {
+	_, isLeader := kv.rf.GetState()
+	if !isLeader {
+		return "", false, fmt.Errorf("not leader")
+	}
+	val, exists := kv.db.Get(key)
+	return val, exists, nil
+}
+
 func (kv *KVStore) ActiveWaitChans() int {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
@@ -184,4 +200,12 @@ func (kv *KVStore) ActiveWaitChans() int {
 
 func (kv *KVStore) RaftMetrics() raftapi.RaftMetrics {
 	return kv.rf.DebugMetrics()
+}
+
+func (kv *KVStore) LSMMetrics() lsm.DebugMetrics {
+	return kv.db.DebugMetrics()
+}
+
+func (kv *KVStore) DebugForceElection() {
+	kv.rf.DebugForceElection()
 }

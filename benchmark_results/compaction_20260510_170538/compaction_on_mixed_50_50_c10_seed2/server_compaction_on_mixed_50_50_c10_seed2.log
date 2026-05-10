@@ -1,0 +1,4 @@
+LSM compaction enabled: true
+Cluster starting, waiting for leader election...
+Cluster ready!
+API Gateway running on http://localhost:8080

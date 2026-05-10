@@ -1,0 +1,15 @@
+repo: /home/star/projects/kvstore/raft-lsm-kv
+suite_id: readmode_20260510_163937
+suite_root: benchmark_results/readmode_20260510_163937
+api_url: http://localhost:8080
+read_modes: raft local
+workloads: read_100
+concurrencies: 1
+seeds: 1
+total_requests: 20
+keyspace: 20
+prefilln: 20
+valuesize: 32
+warmup: 0
+timeout: 10s
+cleaned_data_dir_per_case: /home/star/projects/kvstore/raft-lsm-kv/data
